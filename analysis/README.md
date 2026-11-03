@@ -1,18 +1,81 @@
-# Analysis
+# Analysis and reproducibility
 
-The original-paper protocol is pinned in configs/rome.json. The ROME track
-uses its four original predictor distributions and 100-penalty paths, comparing
-only the native original rome algorithm and the concomitant extension. The
-default driver runs a declared validation subset; --full requests all nine
-dimensions and 100 independent replications. This full study has not completed.
-The separate R4 track starts with Path-Alg size scaling. Drivers call package
-code rather than placing solver updates in the manuscript.
+Experiment drivers call package code; numerical updates belong in `src/`.
+The canonical manuscript is `paper/manuscript.qmd`. Numerical outputs under
+`analysis/outputs/` are ignored by Git and accompanied by provenance sidecars.
+`pipeline.py` records source/input/output hashes, settings, and the environment;
+rendering verifies the recorded numerical dependencies before building the paper.
 
-`pipeline.py` provides capture/verify primitives for generated files. Its smoke
-command exercises the artifact chain. Render verifies hashes and records the
-actual Quarto command, environment, source hashes, and resulting document.
-Outputs are ignored by Git; publish a reviewed reproducibility bundle for a
-submission. Preserve manifests with that bundle. No freeze/cache is used.
+## Current manuscript workflow
+
+Install the package with `python -m pip install -e ".[test,benchmark]"`.
+The original R/C ROME comparator additionally requires R, Rcpp, and mvtnorm.
+Quarto and TeX are required for the manuscript PDF.
+
+```bash
+make sources check rome-reference
+python analysis/fetch_sources.py --scope data
+Rscript analysis/export_glass.R
+make algorithm-template
+make figure1-complete
+make revision-r4
+make optimized-cv
+make optimized-figures
+make pdf manuscript
+```
+
+- **ROME comparison:** `figure1_complete.py` runs the four original designs,
+  nine original size combinations, ten replications per setting, and 100
+  penalties per path. The three implementations are original R/C ROME,
+  fixed-scale Python CD, and concomitant Python CD. `figure1_accuracy.py`
+  checks returned solutions separately. Approximate returns remain labeled;
+  native ROME's stopping criterion is not claimed to match the Python checks.
+- **Unconstrained R4:** `revision_r4.py` compares concomitant CD with c-lasso
+  Path-Alg and Douglas–Rachford at matched objective normalization and common
+  accuracy requirements. Prepared solve, setup, and total times are separate.
+  Read [the R4 audit](classo-r4-audit.md) before interpreting the comparison.
+- **Prediction:** `optimized_real_parallel.py` runs ten outer holdouts and
+  five-fold inner CV on glass and B. subtilis, using separate model-specific
+  null anchors. Filtering and transformations use only the relevant training
+  fold. Both fixed-scale and concomitant models retain an unpenalized intercept.
+- **Assembly:** `optimized_assemble.py` reads saved results to produce manuscript
+  figures and tables; `render_optimized.py` verifies their provenance and records
+  the rendered output. See [the full protocol](revision-protocol.md).
+
+The optional AMP comparison requires separately supplied unpublished source
+materials; they are not redistributed. It compares the matched B. subtilis
+problem instance, with the source's 500-gene correlation filter and parameter
+mapping, rather than adding another prediction method to the CV experiment.
+
+```bash
+make optional-amp-check
+make amp
+make revision-amp
+make optimized-figures
+make pdf manuscript
+```
+
+## Additional diagnostics
+
+- `make python-scale-timing`: paired fixed/concomitant timings with the same
+  Python coefficient kernel on four declared validation datasets.
+- `make scale-strategies`: three small fixtures comparing MM, scalar-root, and
+  joint-prox scale updates at common accuracy.
+- `make scale-path-benchmark`: 36 paired MM/root datasets and 30 penalties,
+  preserving unsuccessful points and unattempted tails. The accompanying
+  report is `scale-path-report.qmd`.
+- `make implementation-audit`: pinned native ROME versus Python source and
+  numerical checks, including stopping rules and isolated coordinate updates.
+- `python analysis/export_submission.py`: source-only GitHub archive and audit.
+
+Recorded timing kernels and historical manifests remain unchanged. Updating
+README text does not require rerunning numerical experiments. Do not replace a
+historical manifest to conceal changes to a numerical dependency.
+
+## Historical pilots and audits
+
+The commands below document earlier studies. They are retained for provenance;
+they do not replace the current three-implementation Figure 1 computation.
 
 ## Implemented pilot
 
