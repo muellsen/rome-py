@@ -301,6 +301,37 @@ are different units of work: the iteration axis shows agreement, not speed.
 
 ![Three coefficient trajectories, scale, and distance to the Path-Alg solution. Solid curves denote CD, dashed curves denote DR, and horizontal lines give the Path-Alg endpoint.](../analysis/outputs/revision-r4/trajectory.pdf){#fig-equivalence width=100%}
 
+~~~{=latex}
+\clearpage
+~~~
+
+## adaHuber and a matched perspective adapter
+
+We compare adaHuber 1.1 [@adahuber2022] on one ROME compound-Gaussian instance
+with $n=p=100$ and seed 71. We center the response and standardize predictors
+by their sample standard deviations. Three penalties are fractions
+$0.6,0.4,0.2$ of the concomitant null-model maximum. We choose
+$a=\rho^2\log(np)/(2n)$ with $\rho=1.345$, so the intended adaptive-threshold
+equation matches the perspective scale equation.
+
+Native adaHuber retains its supplied coefficient penalty while adapting the
+threshold. We therefore report it separately from a matched R adapter. The
+adapter combines its unchanged compiled coefficient steps with a scalar
+scale solve, updates $\eta=\sigma\lambda_0$, and checks joint optimality.
+CD uses MM without support Newton steps. Supplement S7 gives the source audit,
+penalty conversion and adapter equations.
+
+{{< include ../analysis/outputs/adahuber/results.qmd >}}
+
+: Solution quality and median loaded-input CPU time over three repeats at each of three penalties. Differences are relative to a high-accuracy reference and include the intercept. Passed counts settings for which every repeat meets the common residual and objective requirements. Native timing concerns a different estimator. {#tbl-adahuber}
+
+{{< include ../analysis/outputs/adahuber/findings.qmd >}}
+
+Scale estimates and coefficient/scale convergence are shown in Supplement S7.
+Times exclude compilation, process startup, file exchange and external audits.
+Adapter time includes its R loop, scale roots and optimality checks. The
+comparison concerns this selected instance and the stated implementations.
+
 # Real-data applications
 
 ## Cross-validated prediction

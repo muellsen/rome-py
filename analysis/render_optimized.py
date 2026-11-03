@@ -23,6 +23,11 @@ CHECKS={
  'scale-path-benchmark/provenance.json':['analysis/scale_path_benchmark.py',
    *['src/concomitant_huber/'+n+'.py' for n in ('solver','optimized','scale_solver','scale_updates','boundary')]],
  'scale-path-benchmark/report.provenance.json':['analysis/scale_path_report.py'],
+ 'adahuber/provenance.json':['analysis/adahuber_benchmark.py','analysis/adahuber_reference.R',
+   'analysis/rome_paper_experiment.py',
+   *['src/concomitant_huber/'+n+'.py' for n in ('solver','optimized','scale_solver','scale_updates','fast_estimator','qualified_path','diagnostics','model_selection','path','boundary')],
+   *['src/rome_py/'+n+'.py' for n in ('__init__','qualified_path','model_selection')]],
+ 'adahuber-install.provenance.json':['analysis/install_adahuber_reference.py'],
  'optimized-paper/provenance.json':['analysis/optimized_assemble.py']}
 
 def run(fmt,record=False,draft=False):
@@ -42,6 +47,7 @@ def run(fmt,record=False,draft=False):
     inputs=[OUT/n for n in CHECKS if not(draft and n.startswith('revision-rome/'))]
     inputs.extend(OUT/'optimized-paper'/n for n in ('timing-findings.qmd','rome-completion.qmd','equivalence-findings.qmd','amp-matched.qmd','amp-findings.qmd','rome-timing.pdf','real-data.pdf','r4-findings.qmd','real-findings.qmd'))
     inputs.extend([OUT/'revision-r4/results.qmd',OUT/'revision-r4/scaling.pdf',OUT/'revision-r4/trajectory.pdf',OUT/'optimized-real/results.qmd',OUT/'optimized-timing/results.qmd',OUT/'python-scale-timing/results.qmd',OUT/'python-scale-timing/findings.qmd',OUT/'scale-strategies/results.qmd',OUT/'scale-strategies/findings.qmd',OUT/'scale-path-benchmark/results.qmd'])
+    inputs.extend(OUT/'adahuber'/n for n in ('results.qmd','solutions.qmd','findings.qmd','agreement.pdf','trajectory.pdf'))
     save(capture([document],inputs=inputs,configuration={'format':fmt,'focused_rewrite':True,'draft':draft},
                  command=command),OUT/f'manuscript-optimized-{fmt}.provenance.json')
     print('Verified and recorded:',document)

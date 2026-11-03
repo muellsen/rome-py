@@ -19,6 +19,7 @@ Rscript analysis/export_glass.R
 make algorithm-template
 make figure1-complete
 make revision-r4
+make adahuber-reference adahuber-comparison
 make optimized-cv
 make optimized-figures
 make pdf manuscript
@@ -132,3 +133,13 @@ independent feasible dual bounds and boundary lasso-LAD LP solutions.
 Results and provenance are under outputs/incomplete-path-audit/.
 The explanatory report is incomplete-path-audit.qmd. This is a diagnostic,
 not a replacement timing benchmark or certification of unattempted path tails.
+
+## adaHuber comparison
+
+`make adahuber-reference adahuber-comparison` builds the checksum-pinned
+adaHuber 1.1 release and compares its unchanged adaptive-lasso routine, an
+explicitly objective-matched R adapter, and MM coordinate descent on one
+selected ROME dataset at three penalties. The native routine is not labeled
+a solver for the matched perspective objective. All returned solutions,
+quality diagnostics, loaded-input timings and untimed trajectories are saved.
+See [the audit and exact timing scope](adahuber-audit.md).

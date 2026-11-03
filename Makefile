@@ -98,3 +98,9 @@ implementation-audit:
 	$(PYTHON) analysis/implementation_audit.py
 	quarto render analysis/implementation-audit.qmd --to html
 	$(PYTHON) analysis/implementation_audit.py --record-html
+
+.PHONY: adahuber-reference adahuber-comparison
+adahuber-reference:
+	$(PYTHON) analysis/install_adahuber_reference.py
+adahuber-comparison:
+	$(PYTHON) analysis/adahuber_benchmark.py

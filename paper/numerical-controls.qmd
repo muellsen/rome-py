@@ -48,6 +48,11 @@ normalized primal–dual gap at most the outer tolerance $\epsilon$.
 | Null-model roots | Location tolerance $\epsilon_b=10^{-13}$, scale tolerance $\epsilon_0=10^{-12}$, lower bracket $\tau_0=10^{-12}\mathrm{SD}(y)$, upper-bracket expansion $b_0=2$ |
 | Reported support size | Coefficient threshold $\epsilon_{\rm nz}=10^{-8}$ |
 | Matched AMP/CD | Five timed repetitions, AMP limit $K_{\rm AMP}=1000$, CD tolerance $\epsilon_{\rm AMPfit}=10^{-9}$, limit $K_{\rm AMPfit}=10000$, external tolerances $\epsilon_{\rm R4}$ and $\epsilon_{\rm obj}$ |
+| adaHuber comparison | $\epsilon_{\rm ada}=\epsilon_{\rm R4}$, $K_{\rm ada}=1000$ outer iterations, coefficient batch $B_{\rm L}=100$, native coefficient limit $K_{\rm L}=20000$, inner tolerance $\epsilon_{\rm L}=10^{-6}$ |
+| adaHuber coefficient majorizer | Initial curvature $\phi_0=0.01$, backtracking factor $\gamma_{\rm L}=1.2$, coefficient checks every $c_{\rm L}=5$ updates |
+| adaHuber scale roots | $\epsilon_{\rm ada,root}=10^{-11}$, $K_{\rm ada,root}=1000$, bracket expansion $b_{\rm ada}=2$ |
+| adaHuber reference and source checks | $\epsilon_{\rm ada,ref}=10^{-11}$, limit $K_{\rm ada,ref}=20000$, input-standardization tolerance $\epsilon_{\rm std}=10^{-10}$, public/prepared agreement tolerance $\epsilon_{\rm wrapper}=10^{-7}$ |
+| Native adaHuber threshold root | Package defaults $\epsilon_{\tau}=10^{-3}$ and $K_{\tau}=500$ are unchanged |
 | Three-option fixtures | $\epsilon_{\rm pilot}=10^{-7}$, $K_{\rm pilot}=500$, $p_N=0$, reference $\epsilon_{\rm ref}$ with $K_{\rm pilotref}=4000$ |
 | Paired MM/root paths | $\epsilon_{\rm sim}$, $K_{\rm sim}$, $B=8$, $p_N=c_\kappa=5$, $T=2000$, soft path-time limit $T_{\rm path}=120$ seconds, checked between penalties |
 

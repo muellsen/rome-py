@@ -8,6 +8,22 @@ end
 
 function Table(el)
   local heading = pandoc.utils.stringify(el.head)
+  if (#el.colspecs == 6 and heading:find('Joint residual', 1, true)) or
+     (#el.colspecs == 5 and heading:find('Penalty fraction', 1, true)) then
+    if #el.colspecs == 6 then
+      el.colspecs = {{pandoc.AlignLeft, 0.30}, {pandoc.AlignRight, 0.11},
+                    {pandoc.AlignRight, 0.16}, {pandoc.AlignRight, 0.16},
+                    {pandoc.AlignRight, 0.17}, {pandoc.AlignLeft, 0.10}}
+    else
+      el.colspecs = {{pandoc.AlignRight, 0.14}, {pandoc.AlignRight, 0.16},
+                    {pandoc.AlignRight, 0.16}, {pandoc.AlignRight, 0.27},
+                    {pandoc.AlignRight, 0.27}}
+    end
+    if FORMAT:match('latex') then
+      return {pandoc.RawBlock('latex', '\\begingroup\\small\\setstretch{1}'),
+              el, pandoc.RawBlock('latex', '\\endgroup')}
+    end
+  end
   if (#el.colspecs == 3 and heading:find('Software control', 1, true)) or
      (#el.colspecs == 2 and heading:find('Named settings', 1, true)) or
      (#el.colspecs == 7 and heading:find('Root/MM', 1, true)) then

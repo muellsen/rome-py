@@ -186,3 +186,78 @@ redistributed. The source registry records the required checksums.
 # S6. Alternative scale updates {.unnumbered}
 
 {{< include scale-options.qmd >}}
+
+
+~~~{=latex}
+\clearpage
+~~~
+
+# S7. adaHuber source audit and matched comparison {.unnumbered}
+
+We pin the archived adaHuber 1.1 source and record its SHA-256 checksum.
+For its intended adaptive-lasso threshold equation,
+$$
+ n^{-1}\sum_i\min\{r_i^2/\tau^2,1\}=c_{n,p},\qquad
+ c_{n,p}=\log(np)/n,
+$$
+our scale equation agrees when $\tau=\rho\sigma$ and
+$a=\rho^2c_{n,p}/2$. The complete penalized problem additionally requires
+$\eta=\sigma\lambda_0$ in the ordinary Huber coefficient objective.
+The native supplied penalty is $\eta_0=\sigma^{(0)}\lambda_0$, determined
+before fitting and retained throughout that native call.
+
+The archived adaptive-lasso source computes $r=y-Z\theta$ and then sets
+`resSq` to `square(Y)`. Thus the threshold update uses centered responses
+rather than the newly computed residuals. We retain the native code unchanged.
+The prepared native call reproduces the exported R function, including its
+threshold, within $\epsilon_{\rm wrapper}$. We report native scale as
+$\tau/\rho$ under the same stated convention.
+
+Our matched adapter uses the package's compiled `lamm` step. With
+$Z=[\mathbf1,X]$, $\theta=(b,\beta)$, and residual $r=y-Z\theta$, we first solve
+$$
+ a-\frac1{2n}\sum_i\min\{r_i^2/\sigma^2,\rho^2\}=0.
+$$
+We then set $\tau=\rho\sigma$ and
+$\Lambda=(0,\sigma\lambda_0,\ldots,\sigma\lambda_0)$. With
+$G_\tau(\theta)=n^{-1}\sum_i h_\tau(y_i-Z_i^\top\theta)$, each coefficient step is
+$$
+ \theta^+=S_{\Lambda/\phi}
+ \left(\theta-\nabla G_\tau(\theta)/\phi\right).
+$$
+The compiled routine increases $\phi$ by $\gamma_{\rm L}$ until
+$$
+ G_\tau(\theta^+)\le G_\tau(\theta)
+ +\nabla G_\tau(\theta)^\top(\theta^+-\theta)
+ +\tfrac12\phi\|\theta^+-\theta\|_2^2.
+$$
+We use at most $B_{\rm L}$ such steps per scale update and require the common
+joint accuracy checks before acceptance. This coefficient majorization step
+is distinct from our exact scalar Huber coordinate update. The adapter is
+new orchestration of adaHuber primitives, not the native adaptive estimator.
+
+The reference solves the same perspective objective at
+$\epsilon_{\rm ada,ref}$, and its feasible-dual gap is checked independently.
+All returned solutions are assessed by the continuous coefficient residual,
+scale residual and relative objective difference used in the R4 comparison.
+The fitted scales and direct differences between CD and the adapter are:
+
+{{< include ../analysis/outputs/adahuber/solutions.qmd >}}
+
+: Direct CD/adapter agreement at the three regularization settings on the selected dataset. {#tbl-adahuber-solutions}
+
+![Coefficient and scale agreement with the high-accuracy reference, and loaded numerical-fit CPU times. Native adaHuber is retained as an explicitly different procedure.](../analysis/outputs/adahuber/agreement.pdf){#fig-adahuber width=100%}
+
+![Coefficient and scale differences from the high-accuracy solution at penalty fraction 0.4. The CD trace uses the reference implementation and passes the common accuracy checks independently. A CD iteration is a coefficient sweep. An adapter iteration includes a scale root and up to the stated number of coefficient majorizer steps. These iterations are not equal units of work, and traces are excluded from runtime measurements.](../analysis/outputs/adahuber/trajectory.pdf){#fig-adahuber-trace width=100%}
+
+CD and the matched adapter receive the same centered response,
+sample-SD-standardized design, unpenalized intercept and initial null-model
+scale. All coefficient fits start at zero. Native adaHuber retains its
+own MAD-based threshold initialization. R package loading, common
+preprocessing, file exchange and process startup are excluded. R native and
+adapter timings use prepared matrices. Python timing includes its public-fit
+validation and intercept-design construction. Public R call times are also
+saved. We alternate R/Python timing blocks across penalties and native/adapter
+order across repetitions. Internal scale solves and checks remain timed.
+The three penalties are regularization settings on one dataset, not independent
+replications. Numerical settings are given in Supplement S1.
