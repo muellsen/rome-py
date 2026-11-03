@@ -7,6 +7,26 @@ function Span(el)
 end
 
 function Table(el)
+  local heading = pandoc.utils.stringify(el.head)
+  if (#el.colspecs == 3 and heading:find('Software control', 1, true)) or
+     (#el.colspecs == 2 and heading:find('Named settings', 1, true)) or
+     (#el.colspecs == 7 and heading:find('Root/MM', 1, true)) then
+    if #el.colspecs == 3 then
+      el.colspecs = {{pandoc.AlignLeft, 0.15}, {pandoc.AlignLeft, 0.61},
+                    {pandoc.AlignLeft, 0.24}}
+    elseif #el.colspecs == 2 then
+      el.colspecs = {{pandoc.AlignLeft, 0.30}, {pandoc.AlignLeft, 0.70}}
+    else
+      el.colspecs = {{pandoc.AlignLeft, 0.24}, {pandoc.AlignLeft, 0.15},
+                    {pandoc.AlignRight, 0.11}, {pandoc.AlignRight, 0.11},
+                    {pandoc.AlignRight, 0.14}, {pandoc.AlignRight, 0.14},
+                    {pandoc.AlignRight, 0.11}}
+    end
+    if FORMAT:match('latex') then
+      return {pandoc.RawBlock('latex', '\\begingroup\\small\\setstretch{1}'),
+              el, pandoc.RawBlock('latex', '\\endgroup')}
+    end
+  end
   if #el.colspecs == 5 and pandoc.utils.stringify(el.head):find('Fixed Python certified', 1, true) then
     el.colspecs = {{pandoc.AlignLeft, 0.24}, {pandoc.AlignRight, 0.16},
                   {pandoc.AlignRight, 0.20}, {pandoc.AlignRight, 0.20},

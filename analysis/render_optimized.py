@@ -20,6 +20,9 @@ CHECKS={
  'optimization-pilot/provenance.json':['src/concomitant_huber/solver.py','analysis/optimization_pilot.py'],
  'python-scale-timing/provenance.json':['src/concomitant_huber/optimized.py','src/concomitant_huber/boundary.py','src/concomitant_huber/solver.py','analysis/python_scale_timing.py'],
  'scale-strategies/provenance.json':['src/concomitant_huber/solver.py','src/concomitant_huber/optimized.py','src/concomitant_huber/scale_updates.py','src/concomitant_huber/scale_solver.py','src/concomitant_huber/fast_estimator.py','analysis/scale_strategy_comparison.py'],
+ 'scale-path-benchmark/provenance.json':['analysis/scale_path_benchmark.py',
+   *['src/concomitant_huber/'+n+'.py' for n in ('solver','optimized','scale_solver','scale_updates','boundary')]],
+ 'scale-path-benchmark/report.provenance.json':['analysis/scale_path_report.py'],
  'optimized-paper/provenance.json':['analysis/optimized_assemble.py']}
 
 def run(fmt,record=False,draft=False):
@@ -33,12 +36,12 @@ def run(fmt,record=False,draft=False):
     if not record:subprocess.run(command,cwd=ROOT,check=True)
     document=ROOT/'_build/paper'/('manuscript.'+fmt)
     if not document.exists():raise RuntimeError('Rendered manuscript missing')
-    sources=[ROOT/'paper'/n for n in ('manuscript.qmd','algorithm.qmd','algorithm-html.qmd','scale-options.qmd','jcgs-preamble.tex','references.bib','blue-additions.lua')]
+    sources=[ROOT/'paper'/n for n in ('manuscript.qmd','algorithm.qmd','algorithm-html.qmd','scale-options.qmd','supplement.qmd','numerical-controls.qmd','support-step.qmd','jcgs-preamble.tex','references.bib','blue-additions.lua')]
     sources.append(ROOT/'_quarto.yml')
     if document.stat().st_mtime<max(p.stat().st_mtime for p in sources):raise ValueError('Manuscript output predates current sources')
     inputs=[OUT/n for n in CHECKS if not(draft and n.startswith('revision-rome/'))]
     inputs.extend(OUT/'optimized-paper'/n for n in ('timing-findings.qmd','rome-completion.qmd','equivalence-findings.qmd','amp-matched.qmd','amp-findings.qmd','rome-timing.pdf','real-data.pdf','r4-findings.qmd','real-findings.qmd'))
-    inputs.extend([OUT/'revision-r4/results.qmd',OUT/'revision-r4/scaling.pdf',OUT/'revision-r4/trajectory.pdf',OUT/'optimized-real/results.qmd',OUT/'optimized-timing/results.qmd',OUT/'python-scale-timing/results.qmd',OUT/'python-scale-timing/findings.qmd',OUT/'scale-strategies/results.qmd',OUT/'scale-strategies/findings.qmd'])
+    inputs.extend([OUT/'revision-r4/results.qmd',OUT/'revision-r4/scaling.pdf',OUT/'revision-r4/trajectory.pdf',OUT/'optimized-real/results.qmd',OUT/'optimized-timing/results.qmd',OUT/'python-scale-timing/results.qmd',OUT/'python-scale-timing/findings.qmd',OUT/'scale-strategies/results.qmd',OUT/'scale-strategies/findings.qmd',OUT/'scale-path-benchmark/results.qmd'])
     save(capture([document],inputs=inputs,configuration={'format':fmt,'focused_rewrite':True,'draft':draft},
                  command=command),OUT/f'manuscript-optimized-{fmt}.provenance.json')
     print('Verified and recorded:',document)

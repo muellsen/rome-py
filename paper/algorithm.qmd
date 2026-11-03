@@ -3,38 +3,41 @@
 ~~~{=latex}
 \begin{algorithm}[H]
 \small\setstretch{1}\DontPrintSemicolon
-\caption{Pathwise exact coordinate descent with concomitant scale}
+\caption{Pathwise exact Huber CD with an MM scale update}
 \label{alg:concomitant}
 \KwInput{$X\in\mathbb R^{n\times p},y\in\mathbb R^n,\lambda_1\ge\cdots\ge\lambda_L>0$;
-\addition{$\rho,a,\sigma^{(0)},\epsilon,\epsilon_\sigma,\gamma>0,\ B,K,T\in\mathbb N_+,\ \mathcal U\in\{\mathrm{MM},\mathrm{Root},\mathrm{Prox}\}$}}
-$\widehat\beta_0\leftarrow0$; \addition{$\widehat\sigma_0\leftarrow\sigma^{(0)}$}\;
+$\rho,\sigma^{(0)},\epsilon>0,\ K\in\mathbb N_+$;
+\addition{$a>0,\ B\in\mathbb N_+,\ \chi\in\{0,1\}$}}
+$\widehat\beta_0\leftarrow0$; $\widehat\sigma_0\leftarrow\sigma^{(0)}$\;
 \For{$\ell=1,\ldots,L$}{
- $\beta\leftarrow\widehat\beta_{\ell-1}$, $r\leftarrow y-X\beta$;
- \addition{$\sigma\leftarrow\widehat\sigma_{\ell-1}$}\;
+ $\beta\leftarrow\widehat\beta_{\ell-1}$; $r\leftarrow y-X\beta$;
+ $\sigma\leftarrow\widehat\sigma_{\ell-1}$\;
  \For{$k=1,\ldots,K$}{
-  \addition{$M\leftarrow\|r\|_\infty$}\;
-  \addition{\If{$M=0$}{\KwReturn{$((\widehat\beta_m,\widehat\sigma_m,\kappa_m)_{m<\ell},(\beta,0,0))$}}}
-  \addition{$q\leftarrow r/M$; $t\leftarrow\sigma/M$; $m\leftarrow\#\{i:q_i\ne0\}$}\;
-  \addition{\If{$2na\ge m\rho^2$}{\KwReturn{$((\widehat\beta_m,\widehat\sigma_m,\kappa_m)_{m<\ell},(\beta,0,0))$}}}
-  \addition{$(t,b,\nu)\leftarrow\mathrm{Scale}_{\mathcal U}(q,t;B,T,\epsilon_\sigma,\gamma)$; $\sigma\leftarrow Mt$}\;
-  \addition{$\delta\leftarrow\rho\sigma$;\quad $\eta\leftarrow\sigma\lambda_\ell$}\;
-  \addition{$E\leftarrow\{j:\beta_j\ne0\}
-    \cup\{j:|X_j^\top\psi_\delta(r)/n|>\eta\}$}\;
+  \addition{\If{$\chi=1$}{
+   \If{$r=0\ \mathrm{or}\ 2na\ge\rho^2\#\{i:r_i\ne0\}$}{
+    \KwReturn{$((\widehat\beta_m,\widehat\sigma_m,\kappa_m)_{m<\ell},(\beta,0,0))$}
+   }
+   \For{$b=1,\ldots,B$}{
+    $\sigma\leftarrow\{(2an)^{-1}\sum_i\min(r_i^2,\rho^2\sigma^2)\}^{1/2}$\;
+   }
+  }}
+  \addition{$\delta\leftarrow\rho\sigma$; $\eta\leftarrow\sigma\lambda_\ell$}\;
+  \addition{$E\leftarrow\{j:\beta_j\ne0\}\cup\{j:|X_j^\top\psi_\delta(r)/n|>\eta\}$}\;
   \For{$j\in E,\quad j\uparrow$}{
-    $u\leftarrow r+X_j\beta_j$;\quad $\beta_j^-\leftarrow\beta_j$\;
-    $\beta_j\leftarrow\mathrm{ExactHuberCoordinate}(u,X_j,\delta,\eta)$\;
-    $r\leftarrow r-X_j(\beta_j-\beta_j^-)$\;
+   $u\leftarrow r+X_j\beta_j$; $\beta_j^-\leftarrow\beta_j$\;
+   $\beta_j\leftarrow\mathrm{ExactHuberCoordinate}(u,X_j,\delta,\eta)$\;
+   $r\leftarrow r-X_j(\beta_j-\beta_j^-)$\;
   }
-  \addition{$v_\beta\leftarrow R_\beta(\beta,r,\sigma,\lambda_\ell)$;\quad
-              $v_\sigma\leftarrow R_\sigma(r,\sigma)$}\;
-  \addition{\If{$\max(v_\beta,v_\sigma)\le\epsilon$}{\textbf{break}}}
+  $v_\beta\leftarrow R_\beta(\beta,r,\sigma,\lambda_\ell)$;
+  \addition{$v_\sigma\leftarrow\chi R_\sigma(r,\sigma)$}\;
+  \If{$\max(v_\beta,\addition{v_\sigma})\le\epsilon$}{\textbf{break}}
  }
  $\widehat\beta_\ell\leftarrow\beta$;
- \addition{$\widehat\sigma_\ell\leftarrow\sigma$;\quad
-   $\kappa_\ell\leftarrow\mathbf1_{\{\max(v_\beta,v_\sigma)\le\epsilon\}}$}\;
- \addition{\If{$\kappa_\ell=0$}{\KwReturn{$(\widehat\beta_m,\widehat\sigma_m,\kappa_m)_{m=1}^{\ell}$}}}
+ \addition{$\widehat\sigma_\ell\leftarrow\sigma$};
+ $\kappa_\ell\leftarrow\mathbf1_{\{\max(v_\beta,\addition{v_\sigma})\le\epsilon\}}$\;
+ \If{$\kappa_\ell=0$}{\KwReturn{$(\widehat\beta_m,\widehat\sigma_m,\kappa_m)_{m=1}^{\ell}$}}
 }
-\KwReturn{$(\widehat\beta_\ell,\addition{\widehat\sigma_\ell,\kappa_\ell})_{\ell=1}^{L}$}
+\KwReturn{$(\widehat\beta_\ell,\addition{\widehat\sigma_\ell},\kappa_\ell)_{\ell=1}^{L}$}
 \end{algorithm}
 
 \begin{algorithm}[H]
@@ -44,9 +47,9 @@ $\widehat\beta_0\leftarrow0$; \addition{$\widehat\sigma_0\leftarrow\sigma^{(0)}$
 \KwInput{$u,x\in\mathbb R^n,\ \delta>0,\ \eta\ge0$}
 \KwOutput{$\displaystyle\theta\in\arg\min_{b\in\mathbb R}
           \{n^{-1}\sum_i h_\delta(u_i-x_ib)+\eta|b|\}$}
-$g_0\leftarrow-n^{-1}\sum_i x_i\operatorname{sign}(u_i)\min\{|u_i|,\delta\}$\;
+$g_0\leftarrow-n^{-1}\sum_i x_i\mathrm{sign}(u_i)\min\{|u_i|,\delta\}$\;
 \If{$|g_0|\le\eta$}{\KwReturn{$0$}}
-$d\leftarrow-\operatorname{sign}(g_0)$;\quad $D\leftarrow dg_0+\eta$;\quad $c\leftarrow0$\;
+$d\leftarrow-\mathrm{sign}(g_0)$;\quad $D\leftarrow dg_0+\eta$;\quad $c\leftarrow0$\;
 $I\leftarrow\{i:x_i\ne0\}$\;
 \For{$i\in I$}{
  $w_i\leftarrow x_i^2/n$;\quad
@@ -64,31 +67,6 @@ $\{v_1<\cdots<v_M\}\leftarrow
 \KwReturn{$dc$}
 \end{algorithm}
 
-\begin{algorithm}[H]
-\small\setstretch{1}\DontPrintSemicolon
-\caption{\addition{$\mathrm{SafeguardedSupportStep}(\beta,\sigma)$ (optional)}}
-\label{alg:polish}
-\addition{
-$J\leftarrow\{j:\beta_j\ne0\}\cup\{j:j\ \mathrm{unpenalized}\}$\;
-\If{$|J|=0\ \mathrm{or}\ |J|>128$}{\KwReturn{$(\beta,\sigma)$}}
-$z\leftarrow(\beta_J,\sigma)$;\quad
-$g\leftarrow\nabla_J F_{\lambda_0}(\beta,\sigma)$;\quad
-$H\leftarrow\nabla_J^2 F_{\lambda_0}(\beta,\sigma)$\;
-$\mu\leftarrow10^{-10}\max_j H_{jj}$\;
-\If{$\mu=0$}{\KwReturn{$(\beta,\sigma)$}}
-$d\leftarrow-(H+\mu I)^{-1}g$\;
-\If{$g^\top d\ge0$}{\KwReturn{$(\beta,\sigma)$}}
-\For{$m=0,\ldots,23$}{
- $t\leftarrow2^{-m}$;\quad $(\beta_J^+,\sigma^+)\leftarrow z+td$;\quad
- $\beta_{J^c}^+\leftarrow0$\;
- \If{$\sigma^+>0\ \mathrm{and}\ F_{\lambda_0}(\beta^+,\sigma^+)
-     \le F_{\lambda_0}(\beta,\sigma)+10^{-4}t g^\top d$}{
-  \KwReturn{$(\beta^+,\sigma^+)$}
- }
-}
-\KwReturn{$(\beta,\sigma)$}
-}
-\end{algorithm}
 ~~~
 
 :::

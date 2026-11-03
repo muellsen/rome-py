@@ -1,22 +1,17 @@
-## Three interchangeable scale blocks
+The main algorithm uses MM. This section gives two alternatives for the same
+fixed-residual scale problem: direct scalar minimization and joint-proximal
+splitting. All three use the same coefficient updates and require the same
+joint optimality checks after fitting.
 
-We retain three options in the software and in the current manuscript:
-a finite MM batch, numerical exact scalar minimization, and local joint
-proximal updates with common-scale projection. They use the same coefficient
-subroutine, objective, and outer joint certificate. No option is selected
-as the principal method in this revision. After a broader comparison, the
-selected option will remain in the main text and the other two will move
-to the Appendix; all three will remain available in the package.
-
-For fixed residuals, write
+For fixed residuals, we write
 $$
  f_r(\sigma)=\frac1n\sum_i\sigma h_\rho(r_i/\sigma)+a\sigma,
  \qquad f_r(0)=\frac\rho n\|r\|_1.
 $$
-If $M=\|r\|_\infty>0$, set $q=r/M$ and $t=\sigma/M$.
+If $M=\|r\|_\infty>0$, we set $q=r/M$ and $t=\sigma/M$.
 Then $f_r(Mt)=M f_q(t)$, so normalization changes neither the minimizing
-scale nor the sign of an objective difference. Let $m=\#\{i:q_i\ne0\}$.
-If $M=0$ or $2na\ge m\rho^2$, zero is a scale-block minimizer; equality
+scale nor the sign of an objective difference. We write $m=\#\{i:q_i\ne0\}$.
+If $M=0$ or $2na\ge m\rho^2$, zero is a scale-block minimizer. Equality
 can give a nonunique interval of minimizing scales, and we choose zero.
 This block conclusion does not certify the regression coefficients.
 
@@ -26,39 +21,39 @@ $$
               \min\{q_i^2/t^2,\rho^2\},\qquad
  D_q(0+)=a-\frac{m\rho^2}{2n}.
 $$
-The derivative is nondecreasing. Define the block stationarity residual
+The derivative is nondecreasing. We define the block stationarity residual
 $$
  E_q(t)=\begin{cases}|D_q(t)|,&t>0,\\[-2pt]
                      (-D_q(0+))_+,&t=0.\end{cases}
 $$
-We also use a dual certificate. Set $w_i=\psi_\rho(q_i/t)$ for $t>0$
-and $w_i=\rho\operatorname{sign}(q_i)$ for $t=0$, and define
+We also use a dual certificate. We set $w_i=\psi_\rho(q_i/t)$ for $t>0$
+and $w_i=\rho\mathrm{sign}(q_i)$ for $t=0$, and define
 $$
  \theta=\min\{1,\sqrt{2na}/\|w\|_2\},\quad v=\theta w,
  \qquad
  \Delta_q(t)=\frac{f_q(t)-q^\top v/n}{\max\{1,f_q(t)\}}.
 $$
-For $w=0$, take $\theta=1$. Since $\|v\|_\infty\le\rho$ and
+For $w=0$, we take $\theta=1$. Since $\|v\|_\infty\le\rho$ and
 $\|v\|_2^2\le2na$, the numerator is a valid primal--dual gap for the
 fixed-residual scale problem. In floating point its negative roundoff is
-replaced by zero. Write $C_q(t)=\max\{E_q(t),\Delta_q(t)\}$.
+replaced by zero. We write $C_q(t)=\max\{E_q(t),\Delta_q(t)\}$.
 An exact or proximal block return is numerically certified when
 $C_q(t)\le\epsilon_\sigma$. A finite MM batch need not satisfy this
-condition; its inner status is reported separately from outer convergence.
+condition. Joint convergence still requires the coefficient and scale
+conditions in the main text.
 
-**Option A: MM.** Algorithm 4 takes at most $B$ MM steps. Each step
+**Option A: MM.** The MM subroutine below takes at most $B$ MM steps. Each step
 minimizes the tangent majorizer derived above. A finite batch is a descent
 update, not exact minimization of $f_q$.
 
-**Option B: scalar root.** Algorithm 5 solves $D_q(t)=0$ by bisection,
+**Option B: scalar root.** The scalar-root subroutine solves $D_q(t)=0$ by bisection,
 using the bracket
 $$
  0\le t_*\le\frac{\|q\|_2}{\sqrt{2na}}.
 $$
 The previous scale tightens this bracket. This option minimizes the
-original scalar block to its declared certificate tolerance; the label
-`exact` distinguishes that target from a finite surrogate batch, rather
-than asserting symbolic or infinite-precision arithmetic. Equivalently,
+original scalar block to its declared certificate tolerance. The software name
+`exact` denotes scalar minimization to numerical tolerance. Equivalently,
 on a consistent inlier set $I=\{i:|q_i|\le\rho t_*\}$,
 $$
  t_*^2=\frac{\sum_{i\in I}q_i^2}{2na-(n-|I|)\rho^2},
@@ -66,7 +61,7 @@ $$
 when the denominator is positive. The implementation uses the monotone
 root equation and does not assume that $I$ is known.
 
-**Option C: local joint prox and consensus.** Define the closed perspective
+**Option C: local joint prox and consensus.** We define the closed perspective
 $\phi(u,s)=s h_\rho(u/s)+as$, and
 $$
  \mathcal S_q=\{(u,s):u=q,\ s=t\mathbf1\},\qquad
@@ -78,52 +73,45 @@ $$
 $$
 Its objective on $\mathcal S_q$ is $n f_q(t)$. Thus multiplying the
 averaged scale objective by $n$ makes each local proximal term
-$\phi$, with step size $\gamma$; no additional factor $1/n$ is applied
+$\phi$, with step size $\gamma$. No additional factor $1/n$ is applied
 inside these proxs. The scale coefficient $a$ appears once per local
 term, producing the required $na t$ in the unaveraged objective.
 
-Algorithm 6 applies Douglas--Rachford splitting to this sum and affine
+The splitting subroutine applies Douglas--Rachford splitting to this sum and affine
 constraint. With $\Phi(u,s)=\sum_i\phi(u_i,s_i)$, its updates are
 $$
- p^{(k)}=\operatorname{prox}_{\gamma\Phi}(z^{(k)}),\qquad
+ p^{(k)}=\mathrm{prox}_{\gamma\Phi}(z^{(k)}),\qquad
  z^{(k+1)}=z^{(k)}+P_{\mathcal S_q}(2p^{(k)}-z^{(k)})-p^{(k)}.
 $$
 The local operation is the joint perspective prox of
 @combettes2020 [Example 2.5], specialized to the present normalization.
-For $x=u/\gamma$ and $z=s/\gamma$, define
+For $x=u/\gamma$ and $z=s/\gamma$, we define
 $$
- v(\mu)=\operatorname{sign}(x)
+ v(\mu)=\mathrm{sign}(x)
        \min\{|x|/(1+\mu),\rho\},\qquad
  H(\mu)=z-\mu+\tfrac12v(\mu)^2-a.
 $$
-If $H(0)\le0$, take $\mu=0$; otherwise $H$ has a unique positive root.
+If $H(0)\le0$, we take $\mu=0$. Otherwise $H$ has a unique positive root.
 The local prox is
 $$
- \operatorname{prox}_{\gamma\phi}(u,s)
+ \mathrm{prox}_{\gamma\phi}(u,s)
        =(u-\gamma v(\mu),\gamma\mu).
 $$
-Algorithm 7 evaluates this prox by a scalar root with interval tolerance
-$10^{-14}\max\{1,\mu\}$ and at most 80 halvings. It handles negative
+The local-prox subroutine evaluates this prox by a scalar root with interval tolerance
+$\epsilon_\mu\max\{1,\mu\}$ and at most $K_\mu$ iterations. It handles negative
 splitting-scale inputs and the zero-scale output without a scale floor.
-The projected primal shadow has scale $\bar p_s\ge0$, while its residuals
+The projected feasible point has scale $\bar p_s\ge0$, while its residuals
 are fixed at $q$. Splitting iterations need not decrease $f_q$ monotonically.
-We therefore retain the best feasible shadow with objective no larger than
+We therefore retain the best feasible point with objective no larger than
 $f_q(t^{(0)})$. A truncated proximal solve can supply a descent step, but is
 not reported as an exact block solve unless its certificate passes.
 
-| Scale option | Numerical work | Inner termination | Outer acceptance |
-|:--|:--|:--|:--|
-| `mm` | At most $B$ tangent-majorizer updates | $C_q(t)\le\epsilon_\sigma$ or batch limit | Descent; inner status retained |
-| `exact` | Bracketed root of $D_q$ | $C_q(t)\le\epsilon_\sigma$ or root budget | Descent; certificate required for an exact-block label |
-| `prox` | Local joint proxs and consensus splitting | $C_q(\bar p_s)\le\epsilon_\sigma$ or splitting budget | Best feasible descent shadow; inner status retained |
-
-The common numerical guard retains the previous scale if a proposed value
-increases the block objective. The defaults are $B=8$,
-$\epsilon_\sigma=\epsilon/2$, an inner limit of 2000 for root and splitting
-iterations, and normalized proximal step size $\gamma=1$. All methods still
-require the full outer coefficient--scale certificate. Fixed-scale fitting
-bypasses the scale block entirely. Optional support Newton polishing is
-available equally to all three; it is disabled in the comparison below.
+A proposed update is rejected if it increases the original block objective.
+The controls $B,\epsilon_\sigma,T,\gamma,K_\mu,\epsilon_\mu$ are listed
+in Supplement S1. A finite MM batch or truncated splitting solve may provide
+a descent step without minimizing the scale block to tolerance. Fixed-scale
+fitting bypasses these operations. The comparison below disables support
+Newton steps equally for all three methods.
 
 ::: {.content-visible when-format="pdf"}
 
@@ -131,7 +119,7 @@ available equally to all three; it is disabled in the comparison below.
 \begin{algorithm}[H]
 \small\setstretch{1}\DontPrintSemicolon
 \caption{\addition{$\mathrm{ScaleMM}(q,t^{(0)};B,\epsilon_\sigma)$}}
-\KwInput{$q\in\mathbb R^n\setminus\{0\},\ t^{(0)}\ge0;\quad \rho,a,\epsilon_\sigma>0,\ B\in\mathbb N_+,\ 2na<\rho^2\#\{i:q_i\ne0\}$}
+\KwInput{$q\in\mathbb R^n\setminus\{0\},\ t^{(0)}>0;\quad \rho,a,\epsilon_\sigma>0,\ B\in\mathbb N_+,\ 2na<\rho^2\#\{i:q_i\ne0\}$}
 \KwOutput{$(t,b,\nu)\in[0,\infty)\times\mathbb N_0\times\{0,1\}$}
 \addition{
 $t\leftarrow t^{(0)}$; $b\leftarrow0$\;
@@ -172,7 +160,7 @@ $\ell\leftarrow0$; $h\leftarrow\|q\|_2/\sqrt{2na}$\;
 \If{$C_q(t^{(0)})\le\epsilon_\sigma$}{\KwReturn{$(t^{(0)},0,1)$}}
 $z_u\leftarrow q$; $z_s\leftarrow t^{(0)}\mathbf1$; $t_*\leftarrow t^{(0)}$\;
 \For{$b=1,\ldots,T$}{
- \For{$i=1,\ldots,n$}{$(p_{u,i},p_{s,i})\leftarrow\mathrm{JointProx}(z_{u,i},z_{s,i};\gamma)$}
+ \For{$i=1,\ldots,n$}{$(p_{u,i},p_{s,i})\leftarrow\mathrm{JointProx}(z_{u,i},z_{s,i};\gamma,K_\mu,\epsilon_\mu)$}
  $t\leftarrow n^{-1}\sum_i p_{s,i}$\;
  \If{$f_q(t)<f_q(t_*)$}{$t_*\leftarrow t$}
  \If{$C_q(t)\le\epsilon_\sigma\ \mathrm{and}\ f_q(t)\le f_q(t^{(0)})$}{\KwReturn{$(t,b,1)$}}
@@ -185,19 +173,19 @@ $z_u\leftarrow q$; $z_s\leftarrow t^{(0)}\mathbf1$; $t_*\leftarrow t^{(0)}$\;
 
 \begin{algorithm}[H]
 \small\setstretch{1}\DontPrintSemicolon
-\caption{\addition{$\mathrm{JointProx}(u,s;\gamma)$}}
-\KwInput{$u,s\in\mathbb R;\quad \gamma,\rho,a>0$}
-\KwOutput{$\operatorname{prox}_{\gamma\phi}(u,s)$}
+\caption{\addition{$\mathrm{JointProx}(u,s;\gamma,K_\mu,\epsilon_\mu)$}}
+\KwInput{$u,s\in\mathbb R;\quad \gamma,\rho,a,\epsilon_\mu>0,\ K_\mu\in\mathbb N_+$}
+\KwOutput{$\mathrm{prox}_{\gamma\phi}(u,s)$}
 \addition{
 $x\leftarrow u/\gamma$; $z\leftarrow s/\gamma$;
-$v(\mu)\leftarrow\operatorname{sign}(x)\min\{|x|/(1+\mu),\rho\}$\;
+$v(\mu)\leftarrow\mathrm{sign}(x)\min\{|x|/(1+\mu),\rho\}$\;
 $H(\mu)\leftarrow z-\mu+v(\mu)^2/2-a$\;
 \If{$H(0)\le0$}{\KwReturn{$(u-\gamma v(0),0)$}}
 $\ell\leftarrow0$; $h\leftarrow H(0)$\;
-\For{$j=1,\ldots,80$}{
+\For{$j=1,\ldots,K_\mu$}{
  $\mu\leftarrow(\ell+h)/2$\;
  \eIf{$H(\mu)>0$}{$\ell\leftarrow\mu$}{$h\leftarrow\mu$}
- \If{$h-\ell\le10^{-14}\max\{1,\mu\}$}{\textbf{break}}
+ \If{$h-\ell\le\epsilon_\mu\max\{1,\mu\}$}{\textbf{break}}
 }
 $\mu\leftarrow(\ell+h)/2$\;
 \KwReturn{$(u-\gamma v(\mu),\gamma\mu)$}
@@ -207,19 +195,41 @@ $\mu\leftarrow(\ell+h)/2$\;
 
 :::
 
-## Validation without method selection
+## Numerical comparisons {.unnumbered}
 
 The software exposes `FastHuberCD(scale_update="mm")`, `"exact"`, and
 `"prox"`, together with the fixed-residual `update_scale` function.
 The comparison below uses three declared $n=45,p=8$ fixtures and three
 timing repeats per method, with common starts, penalty, coefficient kernel,
 outer tolerance and inner certificate tolerance. Independent reference fits
-use the original solver at tolerance $10^{-9}$; each compared return is
-externally checked at $10^{-7}$ and relative objective difference $10^{-8}$.
+use the original solver at $\epsilon_{\rm ref}$. Each compared return is
+externally checked at $\epsilon_{\rm pilot}$ and relative objective
+difference $\epsilon_{\rm obj}$.
 Compilation and reference fitting are outside the reported fit times.
 
 {{< include ../analysis/outputs/scale-strategies/results.qmd >}}
 
 : Preliminary implementation validation of the three scale options. Inner iteration counts are method-specific work counts, not equivalent operations. {#tbl-scale-strategies}
 
-{{< include ../analysis/outputs/scale-strategies/findings.qmd >}}
+All 27 calls pass these checks. On these small fixtures, MM and direct scalar
+minimization take similar total fit times, whereas joint-proximal splitting
+requires more work. These cases verify the implementations. They do not
+establish a general ordering of the methods.
+
+A separate paired path study uses all four ROME designs, sizes $(100,100)$,
+$(100,500)$ and $(500,500)$, three seeds per design/size, and 30 common absolute
+penalties from the fixed-scale maximum toward 0.05 of that maximum. The
+coefficient routines, support steps and accuracy checks are identical for MM
+and scalar-root fitting. MM certifies 35/36 paths and scalar minimization
+33/36. Incomplete paths remain excluded from paired timing ratios. Among
+the 33 complete pairs, the median root/MM CPU ratio is 1.010, with
+interquartile range 0.976–1.053 and range 0.423–2.008. The largest relative
+objective difference over commonly certified points is $6.06\times10^{-11}$.
+These results support using MM as the default, while retaining the scalar-root
+option. They do not imply that MM is fastest on every dataset. This study
+stops at the first uncertified point and is distinct from the full-return
+Figure 1 experiment.
+
+{{< include ../analysis/outputs/scale-path-benchmark/results.qmd >}}
+
+: Paired MM and scalar-root paths. CPU summaries use complete pairs. Unsuccessful paths remain in the counts. {#tbl-scale-paths}

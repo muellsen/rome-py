@@ -14,3 +14,7 @@ Do not label surrogate minimization an exact Huber coordinate update.
 
 The fixed-scale CD versus concomitant CD comparison and the unconstrained
 c-lasso R4 comparison are equally important; retain both in the main manuscript.
+
+Manuscript prose uses no semicolons. Introduce notation in the first-person
+plural ("we write", "we define"), rather than using imperatives. Mathematical
+assignments and algorithm control statements retain their formal notation.

@@ -1,0 +1,42 @@
+::: {.content-visible when-format="pdf"}
+
+~~~{=latex}
+\begin{algorithm}[H]
+\small\setstretch{1}\DontPrintSemicolon
+\caption{\addition{$\mathrm{SafeguardedSupportStep}(\beta,\sigma)$ (optional)}}
+\label{alg:polish}
+\KwInput{$q_N,K_N\in\mathbb N_+,\ c_H,c_A>0,\ \omega\in(0,1)$}
+\addition{
+$J\leftarrow\{j:\beta_j\ne0\}\cup\{j:j\ \mathrm{unpenalized}\}$\;
+\If{$|J|=0\ \mathrm{or}\ |J|>q_N$}{\KwReturn{$(\beta,\sigma)$}}
+$z\leftarrow(\beta_J,\sigma)$;\quad
+$g\leftarrow\nabla_J F_{\lambda_0}(\beta,\sigma)$;\quad
+$H\leftarrow\nabla_J^2 F_{\lambda_0}(\beta,\sigma)$\;
+$\mu\leftarrow c_H\max_j H_{jj}$\;
+\If{$\mu=0$}{\KwReturn{$(\beta,\sigma)$}}
+$d\leftarrow-(H+\mu I)^{-1}g$\;
+\If{$g^\top d\ge0$}{\KwReturn{$(\beta,\sigma)$}}
+\For{$m=0,\ldots,K_N-1$}{
+ $t\leftarrow\omega^m$;\quad $(\beta_J^+,\sigma^+)\leftarrow z+td$;\quad
+ $\beta_{J^c}^+\leftarrow0$\;
+ \If{$\sigma^+>0\ \mathrm{and}\ F_{\lambda_0}(\beta^+,\sigma^+)
+     \le F_{\lambda_0}(\beta,\sigma)+c_A t g^\top d$}{
+  \KwReturn{$(\beta^+,\sigma^+)$}
+ }
+}
+\KwReturn{$(\beta,\sigma)$}
+}
+\end{algorithm}
+~~~
+
+:::
+
+::: {.content-visible when-format="html"}
+
+The support step solves $(H+c_H\max_j H_{jj}I)d=-g$. It tests step lengths
+$\omega^m$, $m=0,\ldots,K_N-1$, retaining the first positive-scale point
+satisfying $F(z+\omega^m d)\le F(z)+c_A\omega^m g^\top d$. If the
+support exceeds $q_N$, the direction is not a descent direction, or every
+trial fails, it retains the coefficient/MM iterate.
+
+:::

@@ -1,0 +1,54 @@
+The symbols below distinguish numerical controls from model parameters. The
+public estimator defaults are those of `FastHuberCD`. Experiments use the
+explicit overrides in the second table. Mathematical constants such as the
+factor $1/2$ in the loss are not tuning parameters.
+
+| Symbol | Software control or operation | Default |
+|:--|:--|:--|
+| $\epsilon$ | Joint optimality tolerance, `tol` | $10^{-7}$ |
+| $K$ | Outer iteration limit, `max_iter` | 2000 |
+| $B$ | MM steps per scale update, `scale_mm_steps` | 8 |
+| $\epsilon_\sigma$ | Scale-block tolerance, `scale_inner_tol` | $\epsilon/2$ |
+| $T$ | Root/splitting iteration limit, `scale_max_iter` | 2000 |
+| $\gamma$ | Normalized proximal step, `prox_gamma` | 1 |
+| $c_\kappa$ | Full-check interval, `check_every` | 5 |
+| $p_N$ | Support-step interval, `newton_every` | 5, 0 disables |
+| $q_N$ | Maximum support size for a Newton step | 128 |
+| $c_H$ | Relative diagonal ridge for the direction | $10^{-10}$ |
+| $c_A$ | Armijo constant | $10^{-4}$ |
+| $\omega$ | Backtracking factor | $1/2$ |
+| $K_N$ | Maximum backtracking trials | 24 |
+| $\tau_\sigma$ | Small-scale threshold relative to response SD | $10^{-10}$ |
+| $\epsilon_{\rm LP}$ | LP primal/dual feasibility tolerance | $10^{-9}$ |
+| $K_\mu$ | Maximum local-prox root iterations | 80 |
+| $\epsilon_\mu$ | Local-prox interval tolerance | $10^{-14}$ |
+| $c_{\rm init}$ | Response-SD fraction in automatic initialization | $10^{-3}$ |
+
+: Numerical controls of the optimized implementation. Support size, ridge, backtracking, small-scale and LP constants are recorded implementation settings. The other named estimator controls can be supplied at construction. {#tbl-controls}
+
+Automatic scale initialization is
+$\max\{\mathrm{MAD}(y)/\Phi^{-1}(3/4),c_{\rm init}\mathrm{SD}(y),
+\epsilon_{\rm mach}\}$, using the implementation's approximation to the
+Gaussian MAD constant. The small-scale threshold triggers a boundary check.
+It does not constrain the fitted scale. Boundary acceptance requires a
+normalized primal–dual gap at most the outer tolerance $\epsilon$.
+
+| Study | Named settings |
+|:--|:--|
+| ROME simulation | $\epsilon_{\rm sim}=10^{-6}$, $K_{\rm sim}=4000$, $B=8$, $c_\kappa=p_N=5$ |
+| Native ROME | $\epsilon_{\rm ROME}=10^{-4}$, $K_{\rm ROME}=100000$, native iterate-change stopping |
+| Independent simulation audit | Practical normalized-gap threshold $\epsilon_{\rm gap}=10^{-4}$, strict checks use $\epsilon_{\rm sim}$ |
+| R4 CD | $\epsilon_{\rm R4}=10^{-5}$, $K_{\rm R4}=3000$, $B=8$, no support Newton step |
+| R4 reference | $\epsilon_{\rm ref}=10^{-9}$, $K_{\rm ref}=10000$ |
+| R4 comparison | $\epsilon_{\rm obj}=10^{-8}$, penalty fraction $f_{\rm R4}=0.6$ |
+| R4 DR | $c_{\rm DR}=1$, $K_{\rm DR}=5000$, external check every $c_{\rm DRcheck}=10$ updates |
+| Trajectory | $\epsilon_{\rm trace}=10^{-8}$, $K_{\rm trace}=10000$ |
+| Real-data CV | $\epsilon_{\rm CV}=10^{-6}$, $K_{\rm CV}=20000$ |
+| CV tie rule | $\epsilon_{\rm tie}=10^{-10}$ times $\max\{1,|\min\mathrm{MSE}|\}$, we select the largest penalty |
+| Null-model roots | Location tolerance $\epsilon_b=10^{-13}$, scale tolerance $\epsilon_0=10^{-12}$, lower bracket $\tau_0=10^{-12}\mathrm{SD}(y)$, upper-bracket expansion $b_0=2$ |
+| Reported support size | Coefficient threshold $\epsilon_{\rm nz}=10^{-8}$ |
+| Matched AMP/CD | Five timed repetitions, AMP limit $K_{\rm AMP}=1000$, CD tolerance $\epsilon_{\rm AMPfit}=10^{-9}$, limit $K_{\rm AMPfit}=10000$, external tolerances $\epsilon_{\rm R4}$ and $\epsilon_{\rm obj}$ |
+| Three-option fixtures | $\epsilon_{\rm pilot}=10^{-7}$, $K_{\rm pilot}=500$, $p_N=0$, reference $\epsilon_{\rm ref}$ with $K_{\rm pilotref}=4000$ |
+| Paired MM/root paths | $\epsilon_{\rm sim}$, $K_{\rm sim}$, $B=8$, $p_N=c_\kappa=5$, $T=2000$, soft path-time limit $T_{\rm path}=120$ seconds, checked between penalties |
+
+: Experiment-specific controls. The standalone `update_scale` function defaults to tolerance $10^{-8}$. Estimator scale updates instead use $\epsilon_\sigma=\epsilon/2$. {#tbl-experiment-controls}

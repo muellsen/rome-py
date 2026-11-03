@@ -1,89 +1,42 @@
-**Algorithm 1. Pathwise concomitant Huber CD with an interchangeable scale block.**
-Blue expressions mark additions or replacements relative to Algorithm 1 of
-@kim2025exact.
-
-$$
-\begin{aligned}
-\psi_\tau(z)&=\operatorname{sign}(z)\min\{\lvert z\rvert,\tau\},\\
-V_j(\beta,g,\lambda)&=
-\begin{cases}
-\lvert g_j+\lambda\operatorname{sign}(\beta_j)\rvert,&\beta_j\ne0,\\
-(\lvert g_j\rvert-\lambda)_+,&\beta_j=0,
-\end{cases}\\
-R_\beta(\beta,r,\sigma,\lambda)&=
-\max_{1\le j\le p}V_j\!\left(\beta,-n^{-1}X^\top\psi_\rho(r/\sigma),\lambda\right),\\
-R_\sigma(r,\sigma)&=
-\left\lvert a-\frac1{2n}\sum_{i=1}^n\psi_\rho(r_i/\sigma)^2\right\rvert .
-\end{aligned}
-$$
+**Algorithm 1. Pathwise exact Huber CD with an MM scale update.**
+Blue expressions mark changes from ROME. Set $\chi=0$ for fixed scale and
+$\chi=1$ for concomitant estimation.
 
 | Line | Instruction |
 |--:|:--|
-| 1 | **Input:** $X\in\mathbb R^{n\times p},\ y\in\mathbb R^n,\ \lambda_1\ge\cdots\ge\lambda_L>0$; [$\rho,a,\sigma^{(0)},\epsilon,\epsilon_\sigma,\gamma>0,\ B,K,T\in\mathbb N_+,\ \mathcal U\in\{\mathrm{MM},\mathrm{Root},\mathrm{Prox}\}$.]{.addition} |
-| 2 | $\widehat\beta_0\leftarrow0$; [$\widehat\sigma_0\leftarrow\sigma^{(0)}$.]{.addition} |
+| 1 | **Input:** $X,y,\lambda_1\ge\cdots\ge\lambda_L>0,\rho,\sigma^{(0)},\epsilon>0,K\in\mathbb N_+$; [$a>0,B\in\mathbb N_+,\chi\in\{0,1\}$.]{.addition} |
+| 2 | $\widehat\beta_0\leftarrow0,\quad\widehat\sigma_0\leftarrow\sigma^{(0)}$. |
 | 3 | **For** $\ell=1,\ldots,L$ **do** |
-| 4 | $\beta\leftarrow\widehat\beta_{\ell-1},\ r\leftarrow y-X\beta$; [$\sigma\leftarrow\widehat\sigma_{\ell-1}$.]{.addition} |
-| 5 | [**For** $k=1,\ldots,K$ **do**]{.addition} |
-| 6 | [$M\leftarrow\|r\|_\infty$.]{.addition} |
-| 7 | [**If** $M=0$: **return** $\big((\widehat\beta_m,\widehat\sigma_m,\kappa_m)_{m<\ell},(\beta,0,0)\big)$.]{.addition} |
-| 8 | [$q\leftarrow r/M,\ t\leftarrow\sigma/M,\ m\leftarrow\#\{i:q_i\ne0\}$; **if** $2na\ge m\rho^2$: **return** the zero-scale candidate.]{.addition} |
-| 9 | [$(t,b,\nu)\leftarrow\mathrm{Scale}_{\mathcal U}(q,t;B,T,\epsilon_\sigma,\gamma)$; $\sigma\leftarrow Mt$.]{.addition} |
-| 10 | [$\delta\leftarrow\rho\sigma,\quad\eta\leftarrow\sigma\lambda_\ell$.]{.addition} |
-| 11 | [$E\leftarrow\{j:\beta_j\ne0\}\cup\{j:\lvert X_j^\top\psi_\delta(r)/n\rvert>\eta\}$.]{.addition} |
-| 12 | **For** $j\in E$ $(j\uparrow)$ **do** |
-| 13 | $u\leftarrow r+X_j\beta_j,\quad \beta_j^{-}\leftarrow\beta_j$. |
-| 14 | $\beta_j\leftarrow\operatorname{ExactHuberCoordinate}(u,X_j,\delta,\eta)$. |
-| 15 | $r\leftarrow r-X_j(\beta_j-\beta_j^{-})$. |
-| 16 | **End for** |
-| 17 | [$v_\beta\leftarrow R_\beta(\beta,r,\sigma,\lambda_\ell),\quad v_\sigma\leftarrow R_\sigma(r,\sigma)$.]{.addition} |
-| 18 | [**If** $\max(v_\beta,v_\sigma)\le\epsilon$: **break**; **end for**.]{.addition} |
-| 19 | $\widehat\beta_\ell\leftarrow\beta$; [$\widehat\sigma_\ell\leftarrow\sigma,\quad\kappa_\ell\leftarrow\mathbf1_{\{\max(v_\beta,v_\sigma)\le\epsilon\}}$.]{.addition} |
-| 20 | [**If** $\kappa_\ell=0$: **return** $(\widehat\beta_m,\widehat\sigma_m,\kappa_m)_{m=1}^{\ell}$.]{.addition} |
-| 21 | **End for**; **return** $(\widehat\beta_\ell,$ [$\widehat\sigma_\ell,\kappa_\ell$]{.addition}$)_{\ell=1}^{L}$. |
+| 4 | $\beta\leftarrow\widehat\beta_{\ell-1},\quad r\leftarrow y-X\beta,\quad\sigma\leftarrow\widehat\sigma_{\ell-1}$. |
+| 5 | **For** $k=1,\ldots,K$ **do** |
+| 6 | [**If** $\chi=1$ **then**]{.addition} |
+| 7 | [**If** $r=0$ **or** $2na\ge\rho^2\#\{i:r_i\ne0\}$: **return** $((\widehat\beta_m,\widehat\sigma_m,\kappa_m)_{m<\ell},(\beta,0,0))$.]{.addition} |
+| 8 | [**For** $b=1,\ldots,B$: $\sigma\leftarrow\{(2an)^{-1}\sum_i\min(r_i^2,\rho^2\sigma^2)\}^{1/2}$; **end for; end if**.]{.addition} |
+| 9 | [$\delta\leftarrow\rho\sigma,\quad\eta\leftarrow\sigma\lambda_\ell$.]{.addition} |
+| 10 | [$E\leftarrow\{j:\beta_j\ne0\}\cup\{j:|X_j^\top\psi_\delta(r)/n|>\eta\}$.]{.addition} |
+| 11 | **For** $j\in E$, in increasing order, **do** |
+| 12 | $u\leftarrow r+X_j\beta_j,\quad\beta_j^-\leftarrow\beta_j$. |
+| 13 | $\beta_j\leftarrow\mathrm{ExactHuberCoordinate}(u,X_j,\delta,\eta)$. |
+| 14 | $r\leftarrow r-X_j(\beta_j-\beta_j^-)$; **end for**. |
+| 15 | $v_\beta\leftarrow R_\beta(\beta,r,\sigma,\lambda_\ell)$; [$v_\sigma\leftarrow\chi R_\sigma(r,\sigma)$.]{.addition} |
+| 16 | **If** $\max(v_\beta,v_\sigma)\le\epsilon$: **break**; **end for**. |
+| 17 | $\widehat\beta_\ell\leftarrow\beta$; [$\widehat\sigma_\ell\leftarrow\sigma$]{.addition}; $\kappa_\ell\leftarrow\mathbf1_{\{\max(v_\beta,v_\sigma)\le\epsilon\}}$. |
+| 18 | **If** $\kappa_\ell=0$: **return** $(\widehat\beta_m,\widehat\sigma_m,\kappa_m)_{m=1}^{\ell}$; **end for**. |
+| 19 | **Return** $(\widehat\beta_\ell,\widehat\sigma_\ell,\kappa_\ell)_{\ell=1}^L$. |
 
-$$
-B=8,\qquad
-\kappa_\ell=1\ \Longleftrightarrow\
-\sigma>0,\ \max(v_\beta,v_\sigma)\le\epsilon .
-$$
-
-{{< pagebreak >}}
-
-**Algorithm 2.** $\operatorname{ExactHuberCoordinate}(u,x,\delta,\eta)$.
-
-$$
-\begin{aligned}
-h_\delta(z)&=
-\begin{cases}
-z^2/2,&\lvert z\rvert\le\delta,\\
-\delta\lvert z\rvert-\delta^2/2,&\lvert z\rvert>\delta,
-\end{cases}\\
-\operatorname{ExactHuberCoordinate}(u,x,\delta,\eta)
-&\in\underset{\theta\in\mathbb R}{\arg\min}
-\left\{\frac1n\sum_{i=1}^n h_\delta(u_i-x_i\theta)+\eta\lvert\theta\rvert\right\}.
-\end{aligned}
-$$
+**Algorithm 2.** $\mathrm{ExactHuberCoordinate}(u,x,\delta,\eta)$.
 
 | Line | Instruction |
 |--:|:--|
-| 1 | **Input:** $u,x\in\mathbb R^n,\ \delta,\eta>0$. |
-| 2 | $g_0\leftarrow-n^{-1}\sum_{i=1}^n x_i\operatorname{sign}(u_i)\min\{\lvert u_i\rvert,\delta\}$. |
-| 3 | **If** $\lvert g_0\rvert\le\eta$: **return** $0$. |
-| 4 | $d\leftarrow-\operatorname{sign}(g_0),\quad D\leftarrow dg_0+\eta,\quad c\leftarrow0,\quad I\leftarrow\{i:x_i\ne0\}$. |
-| 5 | **For** $i\in I$ **do** |
-| 6 | [$M\leftarrow\|r\|_\infty$.]{.addition} |
-| 7 | [**If** $M=0$: **return** $\big((\widehat\beta_m,\widehat\sigma_m,\kappa_m)_{m<\ell},(\beta,0,0)\big)$.]{.addition} |
-| 8 | [$q\leftarrow r/M,\ t\leftarrow\sigma/M,\ m\leftarrow\#\{i:q_i\ne0\}$; **if** $2na\ge m\rho^2$: **return** the zero-scale candidate.]{.addition} |
-| 9 | [$(t,b,\nu)\leftarrow\mathrm{Scale}_{\mathcal U}(q,t;B,T,\epsilon_\sigma,\gamma)$; $\sigma\leftarrow Mt$.]{.addition} |
-| 10 | [$\delta\leftarrow\rho\sigma,\quad\eta\leftarrow\sigma\lambda_\ell$.]{.addition} |
-| 11 | $J_m\leftarrow\sum_{i\in I}w_i\big(\mathbf1_{\{a_i=v_m\}}-\mathbf1_{\{b_i=v_m\}}\big)$. |
-| 12 | **If** $S>0$ **and** $D+S(v_m-c)\ge0$: **return** $d(c-D/S)$. |
-| 13 | $D\leftarrow D+S(v_m-c),\quad c\leftarrow v_m,\quad S\leftarrow S+J_m$. |
-| 14 | **End for**; **return** $dc$. |
-
-
-**Optional subroutine: SafeguardedSupportStep.** On the current nonzero support
-(and unpenalized intercept), form the gradient and Hessian of the original
-perspective objective. Solve the ridged Newton system and accept a positive-scale
-step only after the Armijo test stated in the text. Otherwise retain the CD/MM
-iterate. The PDF gives its mathematical pseudocode.
+| 1 | **Input:** $u,x\in\mathbb R^n,\ \delta>0,\ \eta\ge0$. |
+| 2 | $g_0\leftarrow-n^{-1}\sum_i x_i\mathrm{sign}(u_i)\min\{|u_i|,\delta\}$. |
+| 3 | **If** $|g_0|\le\eta$: **return** $0$. |
+| 4 | $d\leftarrow-\mathrm{sign}(g_0),\quad D\leftarrow dg_0+\eta,\quad c\leftarrow0,\quad I\leftarrow\{i:x_i\ne0\}$. |
+| 5 | **For** $i\in I$: $w_i\leftarrow x_i^2/n,\quad a_i\leftarrow u_i/(dx_i)-\delta/|x_i|,\quad b_i\leftarrow u_i/(dx_i)+\delta/|x_i|$; **end for**. |
+| 6 | $S\leftarrow\sum_{i\in I}w_i\mathbf1_{\{a_i\le0<b_i\}}$. |
+| 7 | $\{v_1<\cdots<v_M\}\leftarrow(\{a_i:i\in I\}\cup\{b_i:i\in I\})\cap(0,\infty)$. |
+| 8 | **For** $m=1,\ldots,M$ **do** |
+| 9 | $J_m\leftarrow\sum_{i\in I}w_i(\mathbf1_{\{a_i=v_m\}}-\mathbf1_{\{b_i=v_m\}})$. |
+| 10 | **If** $S>0$ **and** $D+S(v_m-c)\ge0$: **return** $d(c-D/S)$. |
+| 11 | $D\leftarrow D+S(v_m-c),\quad c\leftarrow v_m,\quad S\leftarrow S+J_m$; **end for**. |
+| 12 | **Return** $dc$. |

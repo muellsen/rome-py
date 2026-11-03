@@ -2,63 +2,53 @@
 title: "Exact Coordinate Descent for Concomitant Huber Regression"
 date: ""
 abstract: |
-  Regularized Huber regression combines resistance to large residuals with
-  sparse coefficient estimation. Its robustness threshold, however, depends
-  on the residual scale. We develop a coordinate descent method that
-  estimates this scale jointly with the regression coefficients in the
-  convex perspective formulation of concomitant Huber regression. The
-  method combines the exact Huber coordinate updates of ROME with three
-  scale blocks: majorization-minimization, direct scalar minimization, and
-  local joint proximal updates with consensus projection. We derive these
-  alternatives, identify the
-  corresponding changes to the coefficient subproblem, and establish
-  descent of the joint objective. We assess computation on the simulation
-  designs of the original ROME paper and compare matched concomitant
-  solutions with c-lasso. Cross-validated prediction on archaeological glass
-  spectra and bacterial gene-expression data illustrates the resulting
-  estimators. A matched bacterial example also compares coordinate descent
-  with perspective approximate message passing.
+  We implement ROME's exact coordinate descent for sparse Huber regression
+  in Python and extend it to joint estimation of regression coefficients
+  and scale. The extension preserves the convex Combettes–Müller perspective
+  objective: an MM scale step updates both the Huber threshold and the
+  coefficient penalty used in the next coordinate sweep. We derive the
+  update and its descent property, and handle zero-scale solutions through
+  the closed perspective. Experiments compare the original ROME implementation,
+  its fixed-scale Python counterpart, and the concomitant extension on the
+  original simulation designs. A separate scaling study compares solvers
+  for the same unconstrained c-lasso R4 problem. Glass spectra and bacterial
+  gene-expression data illustrate cross-validated prediction and a matched
+  approximate-message-passing comparison.
 ---
 
-*Keywords:* concomitant estimation; coordinate descent; Huber regression;
-majorization-minimization; perspective function.
+*Keywords:* concomitant estimation, coordinate descent, Huber regression,
+majorization-minimization, perspective function.
 
 # Introduction
 
-Huber regression limits the effect of large residuals while retaining the
-quadratic loss near zero. In high-dimensional problems, an additional
-sparsity penalty permits coefficient estimation and variable selection.
-Kim, Loh and Basu [-@kim2025exact] developed exact coordinate updates for
-this problem. Their implementation, ROME, combines these updates with warm
-starts and screening to compute regularization paths efficiently.
+Sparse Huber regression combines a quadratic loss for small residuals with
+linear growth for large residuals and an $\ell_1$ penalty on the coefficients.
+Kim, Loh and Basu [-@kim2025exact] developed exact scalar coordinate updates
+for this problem. Their R package ROME combines these updates with screening
+and warm starts to compute regularization paths.
 
-The threshold separating the quadratic and linear regions is expressed
-in response units. Choosing it therefore requires information about the
-residual scale. Concomitant Huber estimation addresses this dependence by
-estimating coefficients and scale in a single convex problem
-[@combettes2018; @combettes2020]. Earlier connections between robust loss,
-sparsity, and joint scale estimation include @owen2006 and @antoniadis2010.
-Existing proximal algorithms solve this
-problem directly, but do not exploit ROME's exact scalar coordinate updates.
+The Huber threshold is expressed in response units and therefore depends on
+the residual scale. The perspective formulation of Combettes and Müller
+[-@combettes2020] estimates scale and coefficients jointly
+in a convex problem. Connections between robust loss, sparsity and scale
+estimation also appear in @owen2006 and @antoniadis2010. Existing proximal
+methods solve the perspective problem, but do not use ROME's exact coordinate
+updates.
 
-Here, we extend those updates to concomitant Huber regression. The
-construction combines an interchangeable scale block with an exact
-coefficient sweep at the updated threshold and penalty. We retain MM,
-direct scalar minimization, and joint-prox consensus updates as three
-explicit alternatives; method selection is deferred.
-The scale step requires only the current residuals. Related concomitant
-lasso computations also motivate screening and careful treatment of small
-scales [@ndiaye2016]; imposing a positive scale floor would change our
-closed perspective problem. The coefficient step
-uses the same piecewise-affine root search as ROME. We describe the changes
-explicitly, compare computation with fixed-scale ROME and c-lasso, and
-evaluate cross-validated prediction on two real datasets.
+We implement ROME's fixed-scale coordinate descent in Python, with compiled
+numerical routines, and extend it with a scalar majorization–minimization
+(MM) update for scale.
+The extension changes the threshold, the coefficient penalty, and the
+optimality checks after each scale update. It retains the original convex
+objective, including its zero-scale boundary. We compare the three
+implementations on ROME's simulation designs, then compare algorithms for
+identical concomitant objectives and evaluate prediction on two datasets.
 
 # Fixed-scale and concomitant Huber regression
 
-For observations $(y_i,X_i)\in\mathbb R\times\mathbb R^p$, write
+For observations $(y_i,X_i)\in\mathbb R\times\mathbb R^p$, we write
 $r_i(\beta)=y_i-X_i^\top\beta$. We display the objectives without an
-intercept; when included, the intercept is unpenalized. The Huber loss and its score are
+intercept. When included, the intercept is unpenalized. The Huber loss and its score are
 $$
  h_\delta(u)=
  \begin{cases}
@@ -66,7 +56,7 @@ $$
  \delta|u|-\delta^2/2,& |u|>\delta,
  \end{cases}
  \qquad
- \psi_\delta(u)=\operatorname{sign}(u)\min\{|u|,\delta\}.
+ \psi_\delta(u)=\mathrm{sign}(u)\min\{|u|,\delta\}.
 $$
 The original ROME objective is
 $$
@@ -80,8 +70,8 @@ $$ {#eq-rome}
 We focus on the lasso case $\alpha=1$, as in the synthetic experiments
 of the ROME paper.
 
-Following the perspective formulation of Combettes and Müller
-[-@combettes2018; -@combettes2020], the concomitant estimator is
+Following the perspective calculus of Combettes and Müller
+[-@combettes2018], we define the concomitant estimator by
 $$
  (\widehat\beta,\widehat\sigma)\in
  \arg\min_{\beta\in\mathbb R^p,\ \sigma\ge0}
@@ -100,7 +90,7 @@ $$
 $$
 The perspective is jointly convex in $(\sigma,u)$, so
 @eq-concomitant is jointly convex in $(\beta,\sigma)$. The constant
-$\rho$ is dimensionless; the fitted residual threshold is $\rho\sigma$.
+$\rho$ is dimensionless. The fitted residual threshold is $\rho\sigma$.
 For a standard Gaussian reference, the scale-score calibration is
 $$
  a_{\rm G}(\rho)=\tfrac12 E\min\{Z^2,\rho^2\},\qquad Z\sim N(0,1).
@@ -118,7 +108,7 @@ $$
 $$ {#eq-rescaling}
 Thus ROME's scalar update applies with
 $\delta=\rho\sigma$ and $\lambda_{\rm inner}=\sigma\lambda_0$.
-Both quantities change with scale; $\lambda_0$ remains fixed in the joint
+Both quantities change with scale. $\lambda_0$ remains fixed in the joint
 objective.
 
 # Coordinate descent with scale estimation
@@ -126,20 +116,19 @@ objective.
 ## The MM scale update
 
 The representation of Huber estimation as least squares with an
-$\ell_1$-penalized mean shift predates our algorithm
-[@antoniadis2007; @gannaz2006; @she2011]. The sparsity penalty in this
-identity acts on observation-specific shifts; it is distinct from the
-penalty on regression coefficients. Our contribution uses this established
-identity to construct a scale majorizer while retaining ROME's exact
+$\ell_1$-penalized mean shift appears in @antoniadis2007, @gannaz2006
+and @she2011. The sparsity penalty in this
+identity acts on observation-specific shifts. It is distinct from the
+penalty on regression coefficients. We use it to majorize the scale objective while retaining exact
 coefficient updates.
 
-Let $S_\tau(u)=\operatorname{sign}(u)(|u|-\tau)_+$. The mean-shift identity
+We define $S_\tau(u)=\mathrm{sign}(u)(|u|-\tau)_+$. The mean-shift identity
 $$
  \sigma h_\rho(r/\sigma)
  =\min_{o\in\mathbb R}\left\{\frac{(r-o)^2}{2\sigma}+\rho|o|\right\}
 $$
 has minimizer $o=S_{\rho\sigma}(r)$. For current residuals $r$ and
-scale $t>0$, set $o_i^{(t)}=S_{\rho t}(r_i)$. Holding these values fixed
+scale $t>0$, we set $o_i^{(t)}=S_{\rho t}(r_i)$. Holding these values fixed
 majorizes the scale objective by
 $$
  Q(\sigma\mid t)=
@@ -154,11 +143,13 @@ $$
                    \min(r_i^2,\rho^2t^2)\right\}^{1/2}.
 $$ {#eq-mm-scale}
 This is one MM step, rather than an exact minimization of the original
-scale block. We use at most $B=8$ such steps before each coefficient sweep.
+scale block. Algorithm 1 uses $B$ steps before each coefficient sweep. The software
+may stop the scale updates earlier at its scale-block tolerance. Numerical
+controls and experiment-specific settings are collected in Supplement S1.
 
 ## Exact coefficient updates
 
-For coordinate $j$, let $u=r+X_j\beta_j$ be the partial residual.
+For coordinate $j$, we define the partial residual $u=r+X_j\beta_j$.
 At the current scale, the update solves
 $$
  \beta_j^+\in\arg\min_{\theta\in\mathbb R}
@@ -168,15 +159,15 @@ $$
 Its derivative is affine between the kinks
 $u_i/X_{ij}\pm\delta/|X_{ij}|$ for $X_{ij}\ne0$.
 The exact root is obtained by sorting these kinks and updating the
-cumulative slope, as in ROME. Algorithm 2 gives the scalar subroutine;
-zero design entries contribute neither kinks nor slope.
+cumulative slope, as in ROME. Algorithm 2 gives the scalar subroutine.
+Zero design entries contribute neither kinks nor slope.
 
-For stopping, define $g=-X^\top\psi_\rho(r/\sigma)/n$ and
+For stopping, we define $g=-X^\top\psi_\rho(r/\sigma)/n$ and
 $$
  \begin{aligned}
  V_j(\beta,g,\lambda_0)&=
  \begin{cases}
- |g_j+\lambda_0\operatorname{sign}(\beta_j)|,&\beta_j\ne0,\\
+ |g_j+\lambda_0\mathrm{sign}(\beta_j)|,&\beta_j\ne0,\\
  (|g_j|-\lambda_0)_+,&\beta_j=0,
  \end{cases}\\
  R_\beta(\beta,r,\sigma,\lambda_0)&=\max_j V_j(\beta,g,\lambda_0),\\
@@ -190,363 +181,205 @@ conditions. An unpenalized intercept adds the condition $\sum_i\psi_i=0$.
 Algorithm 1 follows ROME's pathwise organization
 [@kim2025exact, Algorithm 1]. Blue expressions add scale estimation,
 rescale the coefficient problem, or replace screening and stopping.
-We refresh all zero-coordinate checks at the current scale; ROME's
+We set $\chi=0$ for fixed scale and $\chi=1$ for concomitant estimation.
+We refresh all zero-coordinate checks at the current scale. ROME's
 fixed-threshold sequential strong rule is not assumed valid after a scale
 change. Coefficients and scale are warm-started along the penalty path,
 following the pathwise strategy of @friedman2010.
 
+
 {{< include algorithm.qmd >}}
 
-{{< include scale-options.qmd >}}
+## Descent and implementation
 
-Algorithm 1 returns a zero-scale candidate without declaring joint
-convergence. The production wrapper applies the boundary dual certificate
-described below before accepting such a fit.
-
-## Descent
-
-For the MM option, each scale step satisfies
+Each MM step satisfies
 $$
  F_{\lambda_0}(\beta,\sigma^+)
- \le Q(\sigma^+\mid t)\le Q(t\mid t)
- =F_{\lambda_0}(\beta,t).
+ \le Q(\sigma^+\mid t)\le Q(t\mid t)=F_{\lambda_0}(\beta,t).
 $$
-For the root option, the numerical guard ensures a nonincreasing original
-scale objective. For the proximal option, retaining the best feasible
-shadow ensures the same descent property even when the inner solve is
-truncated. Each exact coordinate update also decreases the objective. Consequently, at each fixed penalty,
-the objective values are nonincreasing and, being nonnegative, converge.
-A positive-scale point with zero joint residuals is a global minimizer
-by convexity. An unchanged inner iterate alone is not a joint certificate. This argument does not assert
-convergence of every coefficient-scale sequence or inherit ROME's
-fixed-threshold convergence rate. In the reference implementation, a zero-scale return is retained as
-uncertified; no positive scale floor changes the problem. A sweep updating
-$m$ coordinates costs $O(np+mn\log n+Bn)$, including full optimality checks
-and at most $B$ scale updates.
+Each exact coefficient update also decreases the objective. Thus, at a fixed
+penalty, objective values are nonincreasing and converge, since they are
+nonnegative. A positive-scale point with $R_\beta=R_\sigma=0$ is a global
+minimizer by convexity. This argument establishes descent, rather than a
+convergence rate for the coefficient–scale sequence.
 
+The Python implementation retains the breakpoint search and avoids sorting
+when a candidate root is verified to remain in its current Huber segment.
+It reuses residuals and score evaluations. Both fixed-scale and concomitant
+fits can use the same safeguarded support Newton step. Its equations and
+settings are given in Supplement S2. A sweep over $m$ coordinates costs
+$O(np+mn\log n+Bn)$, including a full optimality check and $B$ scale steps.
 
-## Exact affine roots and safeguarded acceleration
-
-The reference implementation sorts the breakpoints for every active
-coordinate. If the derivative root lies in the current Huber segment,
-this sorting is unnecessary. With current coefficient $b$, residual $r$,
-and fixed $\delta$, define
-$$
- g=-n^{-1}\sum_i x_i\psi_\delta(r_i),\qquad
- L=n^{-1}\sum_i x_i^2\mathbf1_{\{|r_i|<\delta\}},\qquad
- b^+=S_{\eta/L}(b-g/L).
-$$
-For $L>0$, this is an exact coordinate minimizer whenever every residual
-$r_i-x_i(b^+-b)$ remains in its current quadratic or linear segment.
-Otherwise we use the breakpoint subroutine. The optimized implementation
-also reuses residual buffers and score evaluations, and checks all
-coordinates at least every five sweeps. Inactivity is provisional after a
-scale change; termination always requires a full current-scale certificate.
-
-Cheaper sweeps do not remove slow convergence in correlated designs.
-We therefore offer a safeguarded support Newton step after every fifth
-sweep, for supports of at most 128 coefficients. Let $J$ be the current
-nonzero support, including an unpenalized intercept when present, and
-$I=\{i:|r_i|<\rho\sigma\}$. On the current smooth segment, the joint Hessian is
-$$
- H_J=\frac1{n\sigma}
- \begin{pmatrix}
- X_{I,J}^{\top}X_{I,J}&X_{I,J}^{\top}r_I/\sigma\\
- r_I^{\top}X_{I,J}/\sigma&\|r_I\|_2^2/\sigma^2
- \end{pmatrix}.
-$$
-Using the gradient $g_J$ on this support, we solve
-$(H_J+\mu I)d=-g_J$, with $\mu=10^{-10}\max_j(H_J)_{jj}$.
-The ridge regularizes the search direction only. Backtracking halves the
-step until the original nonsmooth objective satisfies the Armijo inequality
-with constant $10^{-4}$ and the proposed scale is positive; after 24
-unsuccessful trials, we retain the CD/MM iterate. Fixed-scale fitting uses
-only the coefficient block. Each accepted step decreases the same objective;
-this addition does not alter the estimator or replace exact scalar updates
-by surrogate updates. Disabling polishing recovers the optimized CD/MM
-variant. The original unaccelerated solver remains available for audit.
-
-## Certifying the zero-scale boundary
-
-Very small scales require the closed perspective rather than a numerical
-scale floor. At $\sigma=0$, we solve the LAD-lasso linear program
-$$
- \min_\beta\{\rho\|y-X\beta\|_1/n+\lambda_0\|\beta\|_1\}.
-$$
-A dual vector $v$ certifies optimality for the joint problem if
-$$
- \|v\|_\infty\le\rho,\qquad
- \|v\|_2^2\le2na,\qquad
- \|X^\top v/n\|_\infty\le\lambda_0,
-$$
-and its objective $y^\top v/n$ agrees with the primal value.
-An unpenalized intercept instead requires $\mathbf1^\top v=0$.
-We center the LP dual for the intercept and rescale it to satisfy all dual
-inequalities before evaluating the primal--dual gap. A boundary result is
-accepted only when the relative gap is at most $10^{-6}$.
-A small scale triggers this check; it does not itself certify convergence.
-This boundary computation also permits continuing the path after a
-certified zero-scale solution.
+Algorithm 1 describes the positive-scale iterations. A zero-scale candidate
+requires a separate check: at $\sigma=0$, the objective is LAD-lasso,
+$\rho\|y-X\beta\|_1/n+\lambda_0\|\beta\|_1$. The implementation solves
+this boundary problem and checks a feasible perspective dual and its
+primal–dual gap before declaring joint optimality. Small scale alone is
+insufficient. Supplement S3 gives the certificate and the rule for continuing
+a path after an approximate return. No positive scale floor is imposed.
 
 # Computational assessment
 
 ## ROME simulation designs
 
-We repeat Section 4.1 of @kim2025exact, comparing only the original ROME
-algorithm and the concomitant extension. We use all nine combinations
-$n,p\in\{100,500,1000\}$ and the four predictor distributions: compound
-Gaussian correlation $0.8$, multivariate $t_2$ with AR($0.8$) dependence,
-Gaussian AR($0.8$) predictors with an independent Cauchy last coordinate,
-and independent Cauchy AR($0.2$) and Gaussian AR($0.8$) blocks.
-Responses have independent $N(0,1)$ errors and the sparse coefficient
-vector in the original experimental script. We use 10 replications
-per setting, rather than the original 100.
+We repeat the four designs in Section 4.1 of @kim2025exact. They use
+compound Gaussian correlation $0.8$, multivariate $t_2$ with AR($0.8$)
+dependence, Gaussian AR($0.8$) predictors with a Cauchy last coordinate,
+and Cauchy AR($0.2$) and Gaussian AR($0.8$) blocks. We use the original sparse coefficient vector,
+independent $N(0,1)$ response errors, and all nine combinations
+$n,p\in\{100,500,1000\}$. Ten replications per setting give 360 datasets.
+The original study used 100 replications per setting.
 
-The common 100-point grid is
+Each implementation receives the same saved data and 100 absolute penalties,
 $$
  \Lambda_{\max}=\|X^\top\psi_{0.5}(y)\|_\infty/n,\qquad
- \lambda_\ell=\Lambda_{\max}\exp\{\ell\log(0.05)/100\}.
+ \lambda_\ell=\Lambda_{\max}(0.05)^{\ell/100},\quad \ell=1,\ldots,100.
 $$
-This follows the executable ROME experiment; its general path description
-uses a different lower endpoint. ROME fixes $\delta=0.5$.
-Concomitant CD uses $\rho=0.5$, $a=a_{\rm G}(0.5)$,
-$\sigma^{(0)}=1$, and the same absolute $\lambda_0=\lambda_\ell$.
-The two models coincide initially in their coefficient normalization,
-but estimate different objectives after scale changes.
+The endpoint follows the original experimental script. Native R/C ROME fixes
+$\delta=0.5$. Python fixed-scale CD uses $\rho=0.5,\sigma=1$.
+Concomitant CD uses $\rho=0.5$, $a=a_{\rm G}(0.5)$ and
+$\sigma^{(0)}=1$. Both Python modes use the same optimized coefficient
+routines and support steps. Their coefficient subproblems coincide initially,
+but scale estimation subsequently changes both threshold and penalty.
 
-We time three implementations: native R/C ROME at fixed scale, fixed-scale
-Python CD, and concomitant Python CD with MM scale updates. Both Python modes
-use the optimized exact coefficient kernel, working sets, and safeguarded
-support polishing every five sweeps. Fixed scale is $\sigma=1$. All three
-receive identical saved data and the same 100 absolute penalties.
+@fig-rome reports path CPU time with one BLAS thread, excluding
+compilation, startup, data loading, serialization and post-fit audits.
+Boundary solves and approximate-solution continuation are included. Every
+path visits all 100 penalties. Python uses coefficient tolerance
+$\epsilon_{\rm sim}$ and limit $K_{\rm sim}$. Concomitant fitting additionally
+checks scale optimality or the boundary certificate. Native ROME retains
+its own iterate-change tolerance $\epsilon_{\rm ROME}$. These stopping rules
+are different, so the native comparison is not accuracy-matched.
+The fixed-scale Python curve distinguishes implementation effects from
+changes caused by scale estimation.
 
-We record loaded-data path CPU time, excluding compilation, process startup,
-serialization, and independent post-fit audits. Paths run serially with
-BLAS thread counts set to one; the order of the two Python modes
-alternates by dataset. Python uses tolerance $10^{-6}$ and at most 4000 sweeps
-per penalty. If joint convergence is not certified, we compare the returned
-iterate with a boundary LAD-lasso candidate and retain the smaller original
-perspective objective. Such a return remains explicitly approximate. We
-continue to the next penalty using the returned coefficients; an uncertified
-zero-scale state permits restarting positive-scale CD at scale one.
-Thus every displayed path visits all 100 penalties, and its timing includes
-candidate selection and boundary solves. No unattempted tail is counted as
-a completed path. Feasible dual bounds independently quantify the objective
-uncertainty, with normalized gap $(F-D)/\max\{1,|F|\}$.
+The fixed-scale and concomitant Python fits certify all penalties on
+333/360 and 315/360 paths, respectively. There are 73 and 89 uncertified
+points out of 36,000. Their computation remains in the timings and the
+corresponding cells are marked. Supplement S3 reports independent objective
+bounds and the native-code audit. The curves therefore describe the stated
+implementations and numerical returns, rather than a uniform speed guarantee.
 
-ROME retains its native $10^{-4}$ iterate-change tolerance; external
-coefficient stationarity is recorded separately. The curves describe the
-implementations under their stated stopping rules, rather than a
-matched-accuracy comparison between identical estimators.^[The reproducibility
-materials also record a coordinate-level discrepancy in the pinned native
-routine at an L1 zero optimum, with an installed-R reproduction. Screening
-avoids the discrepancy in the minimal example; native ROME is unchanged in
-the timing experiment.]
-The fixed-scale
-Python curve separates implementation effects from the cost of joint fitting.
-
-{{< include ../analysis/outputs/optimized-paper/timing-findings.qmd >}}
-
-{{< include ../analysis/outputs/optimized-paper/rome-completion.qmd >}}
-
-: Full returned paths and independently assessed accuracy at individual penalty values. Native returns do not imply the Python accuracy criterion. {#tbl-rome-completion}
-
-![Mean CPU time, with standard deviations over ten replications, for full 100-penalty paths from native R/C ROME, fixed-scale Python CD, and concomitant Python CD. All three curves include every dataset. Hollow Python markers identify cells containing at least one path with an approximate return; those paths remain in the timings and their accuracy is reported separately.](../analysis/outputs/optimized-paper/rome-timing.pdf){#fig-rome width=100%}
-
-## Optimized implementation validation
-
-Before the full-grid rerun, we repeated four declared 100-penalty paths with the affine-root,
-working-set and safeguarded support updates, and certified zero-scale handling.
-The original R/C comparator is rerun on the same saved inputs. Compilation,
-serialization and R startup are excluded; the optimized time includes boundary
-linear programs when required. This single-replication validation is separate
-from the ten-replication experiment and does not establish uniform speed parity.
-Native ROME retains its original stopping rule; its external coefficient
-residuals in these checks range from $0.013$ to $2.18$. These native-runtime
-measurements are therefore not matched-accuracy solver comparisons.
-
-{{< include ../analysis/outputs/optimized-timing/results.qmd >}}
-
-: Fresh full-path validation of the optimized implementation. {#tbl-optimized}
-
-## Paired Python fixed-scale and concomitant timings
-
-To remove implementation-language differences from the scale-cost comparison,
-we time both models using the same optimized Python kernel on the same four
-saved validation datasets. Fixed-scale fitting holds $\sigma=1$; concomitant
-fitting starts at $\sigma^{(0)}=1$. Both receive the same 100 absolute penalties,
-$\rho=0.5$, no intercept or standardization, and identical coordinate,
-working-set and support-polishing settings. Coefficient tolerance is $10^{-6}$
-for both; the joint model additionally requires the scale condition or the
-zero-scale dual certificate. The per-point budget is 4000 sweeps and the
-path wall-time safeguard is 120 seconds in each mode.
-
-We perform five fresh timing repeats per dataset, alternating method order
-and retaining within-path warm starts. These are timing repeats of the same
-four datasets, not additional simulation replications. Compilation, data
-loading, serialization and independent post-fit verification are excluded;
-internal certificates and any boundary LPs are included. CPU medians use only
-repeats in which both complete paths independently satisfy their required
-optimality conditions. Failures, wall times, sweep counts and boundary counts
-are retained with the raw fits.
-
-{{< include ../analysis/outputs/python-scale-timing/results.qmd >}}
-
-: Paired Python full-path CPU times, with five timing repeats per dataset. Joint/fixed is the median within-repeat CPU ratio; fixed scale is one. {#tbl-python-scale}
-
-{{< include ../analysis/outputs/python-scale-timing/findings.qmd >}}
+![Mean CPU time and standard deviation over ten replications for 100-penalty paths: original R/C ROME, fixed-scale Python CD, and concomitant Python CD. All 360 datasets are included. Hollow Python markers indicate cells containing a path with at least one uncertified return.](../analysis/outputs/optimized-paper/rome-timing.pdf){#fig-rome width=100%}
 
 ## Matched concomitant solutions and c-lasso
 
-We next compare solvers for the *same* unconstrained problem
-@eq-concomitant. The R4 formulation in c-lasso 1.0.11 uses doubled Huber loss.
-Its parameters satisfy
+We next compare algorithms for the same unconstrained objective
+@eq-concomitant. In c-lasso 1.0.11 [@simpson2020], R4 uses doubled Huber loss.
+Its parameters map to ours as
 $$
- \lambda_{\rm classo}=2n\lambda_0,\qquad e=2na .
+ \lambda_{\rm classo}=2n\lambda_0,\qquad e=2na.
 $$
-We use $\rho=1.345$, $a=1/2$, no intercept and no coefficient constraints.
-The R4 mean-shift Path-Alg reduces the problem to an augmented concomitant
-least-squares problem with
-$$
- A_{\rm aug}=\sqrt2[X,\{\lambda_{\rm classo}/(2\rho)\}I_n],
- \qquad y_{\rm aug}=\sqrt2y ,
- \qquad \sigma=\sigma_{\rm aug}/2 .
-$$
-We call this branch directly: c-lasso's R4 path interface otherwise
-dispatches to Douglas--Rachford (DR) regardless of the requested path label.
-The path solver uses zero Gram correction to preserve the target
-objective. We also compare DR with its declared metric parameter $c=1$;
-the update equations are unchanged, and stopping uses the common
-accuracy check. The source audit and setup costs are recorded in the reproducibility materials.
+We use $\rho=1.345$, $a=1/2$, no intercept and no constraints. The audited
+comparators are the mean-shift Path-Alg branch and Douglas–Rachford (DR).
+We call Path-Alg directly because the R4 path interface otherwise selects
+DR. Zero Gram correction preserves the target objective. DR uses metric
+parameter $c_{\rm DR}$ and the common accuracy check. Supplement S4 gives
+the augmentation, stopping criteria and prepared timing table.
 
-The moderate scaling experiment varies $n$ at $p=2n$ and $p$ at $n=100$,
-with two data seeds and three timed repetitions. Predictors are
-standardized independent Gaussian variables, ten coefficients are nonzero,
-and response errors are Gaussian. The penalty is 0.6 times the maximum absolute Huber-score correlation
-at the initial median-absolute-deviation scale. All methods receive this same
-absolute penalty. A return qualifies when the continuous coefficient residual $\|\beta-S_{\lambda_0}(\beta+X^\top\psi_\rho(r/\sigma)/n)\|_\infty$ and the scale residual are at most $10^{-5}$ and relative objective difference from
-a high-accuracy reference is at most $10^{-8}$.
-Prepared solve time excludes imports, compilation and model/Gram setup;
-setup and total costs are retained separately.
+The scaling experiment varies $n$ at $p=2n$ and $p$ at $n=100$, with two
+seeds and three timed repetitions. Predictors are standardized independent
+Gaussian variables. Ten coefficients are nonzero and errors are Gaussian.
+The common penalty is $f_{\rm R4}$ times the maximum score correlation at
+the initial MAD scale. A return must satisfy the common coefficient and
+scale tolerances $\epsilon_{\rm R4}$ and relative objective tolerance
+$\epsilon_{\rm obj}$. Prepared solve times exclude imports, compilation and
+model/Gram setup. Setup and total times are recorded separately.
 
-{{< include ../analysis/outputs/revision-r4/results.qmd >}}
+CD and Path-Alg pass these checks in all 30 calls. DR passes in 27.
+At $n=200,p=400$, prepared CD takes 5.86 ms, Path-Alg 122.80 ms and
+DR 2213.62 ms (@fig-r4). These are implementation timings: CD uses
+compiled routines, whereas the c-lasso updates execute at Python level.
 
-: Median prepared solve times on common accuracy-qualified repetitions. Qualified counts list CD, Path-Alg and DR, each out of six calls. {#tbl-r4}
+![Prepared solve time for the same unconstrained R4 objective. Curves use repetitions passing the common accuracy checks for all methods. Counts and times are given in Supplement S4.](../analysis/outputs/revision-r4/scaling.pdf){#fig-r4 width=100%}
 
-![Prepared numerical solve time for matched unconstrained R4 problems. Curves use common accuracy-qualified repetitions across methods; failures remain in the accompanying results.](../analysis/outputs/revision-r4/scaling.pdf){#fig-r4 width=100%}
+@fig-equivalence shows selected coefficients and scale for a full-rank
+$n=80,p=40$ example. The final coefficient differences from Path-Alg are
+$4.4\times10^{-8}$ for CD and $2.9\times10^{-7}$ for DR. Scale differences
+are $3.9\times10^{-8}$ and $5.8\times10^{-7}$. A CD sweep and a DR update
+are different units of work: the iteration axis shows agreement, not speed.
 
-{{< include ../analysis/outputs/optimized-paper/r4-findings.qmd >}}
-
-For a full-rank example with $n=80,p=40$, @fig-equivalence follows
-coefficient and scale iterates from CD and DR toward the Path-Alg
-solution. A CD sweep and a DR splitting update are different units of work;
-the iteration axis illustrates agreement, not relative speed.
-
-{{< include ../analysis/outputs/optimized-paper/equivalence-findings.qmd >}}
-
-![Three coefficient trajectories, scale trajectories, and distance to the common Path-Alg solution. Solid curves denote CD and dashed curves denote DR; horizontal reference lines indicate the Path-Alg endpoint.](../analysis/outputs/revision-r4/trajectory.pdf){#fig-equivalence width=100%}
+![Three coefficient trajectories, scale, and distance to the Path-Alg solution. Solid curves denote CD, dashed curves denote DR, and horizontal lines give the Path-Alg endpoint.](../analysis/outputs/revision-r4/trajectory.pdf){#fig-equivalence width=100%}
 
 # Real-data applications
 
 ## Cross-validated prediction
 
-We analyze the archaeological glass data from the ROME application
-($n=180$, frequencies 15--500, $p=486$, response PbO) and the
-*B. subtilis* riboflavin data ($n=71,p=4088$).
-For each dataset we generate ten random training/test partitions.
-Glass uses 120 training and 60 test observations; riboflavin uses
-50 training and 21 test observations.
+We use the archaeological glass data from the ROME application
+($n=180,p=486$, frequencies 15–500, response PbO) and the *B. subtilis*
+riboflavin data ($n=71,p=4088$). Ten random outer splits use training/test
+sizes 120/60 for glass and 50/21 for riboflavin. Within each training set,
+five-fold CV selects among 50 penalty fractions from 1 to $10^{-3}$.
+Each model uses its own intercept-only null-model penalty anchor.
+Centering and scaling are fitted within each training fold. For riboflavin,
+a deterministic greedy correlation filter retains 500 genes using only
+that fold's training predictors. Both models receive the same columns.
 
-Within each training set, five-fold CV selects a penalty by minimum
-validation mean squared error over 50 logarithmically spaced penalty
-fractions from 1 to $10^{-3}$. Fractions multiply model-specific null-model score maxima,
-computed separately in each training fit. Predictor and response centering/scaling are fitted separately
-in every inner training fold and repeated on the outer training set for
-refitting. For riboflavin, the deterministic greedy correlation filter
-retains 500 genes, using only predictors in the corresponding training
-fold. Both estimators receive the same retained columns.
-Held-out outcomes enter neither filtering nor tuning.
-
-We compare the fixed-scale Huber and concomitant models using the same
-Python coordinate kernel and an optimized, unpenalized intercept.
-This isolates scale estimation in the prediction study; the original
-R/C ROME implementation remains the comparator in @fig-rome.
-Both models use lasso penalties and $\rho=1.345$; the concomitant scale
-constant is $a_{\rm G}(1.345)$. Thus the glass analysis is a lasso adaptation
-of the original application, whose elastic-net mixing parameter was $0.3$.
-Failed optimization points are excluded from CV eligibility and recorded.
-The revised grids start separately from each model's intercept-only optimum.
-For a concomitant location--scale optimum $(b_0,\sigma_0)$, the anchor is
-$$
- \lambda_{\max}^{\rm con}
- =\frac1n\left\|X^\top\psi_\rho
-       \left(\frac{y-b_0\mathbf1}{\sigma_0}\right)\right\|_\infty.
-$$
-This expression assumes $\sigma_0>0$ and an optimized unpenalized
-intercept. We compute both model-specific anchors within each training fold
-and keep them fixed while traversing the paths. The revised CV uses the
-optimized solver, safeguarded polishing, and certified boundary solutions,
-with a 20,000-sweep limit per positive-scale fit. Uncertified points are
-recorded and excluded individually while later penalties are still attempted.
-Numerical MSE ties within $10^{-10}\max\{1,|\min\mathrm{MSE}|\}$ select the
-largest penalty. The previous shared-anchor
-results are preserved separately.
+Fixed-scale and concomitant fits use the same Python coefficient routines,
+an unpenalized intercept, lasso penalties and $\rho=1.345$. The concomitant
+constant is $a_{\rm G}(1.345)$. The glass analysis is therefore a lasso
+adaptation of the ROME application, which used elastic-net mixing $0.3$.
+Uncertified fits are excluded individually from CV, while later penalties
+are still attempted. Supplement S5 gives the null anchors, numerical settings
+and a representative CV/prediction plot.
 
 {{< include ../analysis/outputs/optimized-real/results.qmd >}}
 
-: Cross-validated held-out prediction and selected coefficient counts. {#tbl-real}
+: Held-out MSE divided by the training response variance, and selected coefficient counts. Parentheses give standard deviations over ten outer splits. {#tbl-real}
 
-{{< include ../analysis/outputs/optimized-paper/real-findings.qmd >}}
-
-The table reports test MSE divided by the outer training response variance,
-and selected coefficient counts. Parentheses give standard deviations
-across successful outer partitions. Optimization failures and eligible
-path lengths are reported alongside prediction results.
-
-![Inner-fold prediction error on model-specific penalty grids and held-out prediction for the first split of each dataset. Penalty fractions use each model's optimized null anchor. Filtering and standardization are fitted within the relevant training set; certified zero-scale solutions are included.](../analysis/outputs/optimized-paper/real-data.pdf){#fig-real width=100%}
+Prediction errors are similar for the two estimators in these experiments.
+Concomitant fitting selects more coefficients on average. All selected
+refits pass their accuracy checks. Two concomitant splits exclude one
+uncertified penalty from the inner-CV grid. The other grids are complete.
+Four of the twenty concomitant refits have certified zero scale.
 
 ## A matched riboflavin AMP instance
 
-We additionally consider the concrete riboflavin instance of the supplied
-Perspective--AMP manuscript [@perspectiveamp]. This is a numerical
-same-solution comparison, separate from CV prediction. We reproduce
-its 500-gene correlation filter fitted to the full predictor matrix,
-split seed 20261006,
-and 80% training fraction ($n=57,p=500$).
-The AMP design and penalty conventions map to ours as
+We also reproduce the specific riboflavin problem in the supplied
+Perspective–AMP manuscript [@perspectiveamp], separately from CV prediction.
+Its global predictor-only correlation filter retains 500 genes before the
+80% training split ($n=57,p=500$). Both algorithms receive this same matrix.
+The normalization is
 $$
  A=X/\sqrt n,\qquad B=\sqrt n\,\beta,\qquad
- \lambda_{\rm AMP}=\sqrt n\,\lambda_0 .
+ \lambda_{\rm AMP}=\sqrt n\,\lambda_0.
 $$
-{{< include ../analysis/outputs/optimized-paper/amp-findings.qmd >}}
+At $\lambda_{\rm AMP}=2.5$ and $\omega=14/500$, both methods select 14
+coefficients, with maximum difference $1.6\times10^{-9}$ and fitted scale
+$0.55608$. Every timed return passes the common accuracy checks.
 
 {{< include ../analysis/outputs/optimized-paper/amp-matched.qmd >}}
 
-: Computation and scale agreement at the matched AMP instance. {#tbl-amp}
-
-The prepared times exclude filtering, preprocessing, compilation and
-calibration search. They compare the specified implementations at this
-matched setting; no claim is made for arbitrary AMP calibrations.
+: Prepared computation at the matched AMP instance, excluding preprocessing, compilation and calibration search. {#tbl-amp}
 
 # Discussion
 
-Concomitant Huber regression can be fitted by combining a scalar MM scale
-step with exact Huber coordinate updates. The coefficient subproblem
-retains ROME's structure after updating both its threshold and penalty.
-Joint optimality checks are needed because scale changes also alter
-coordinate eligibility and stopping conditions.
+The Python implementation makes ROME's exact fixed-scale coordinate descent
+available alongside a concomitant extension. The extension adds a scalar MM
+step and updates both $\rho\sigma$ and $\sigma\lambda_0$ before each
+coefficient sweep. Current-scale optimality checks and the closed-perspective
+boundary are essential to fitting the stated convex objective.
 
-The experiments distinguish the cost of extending a fixed-scale method
-from the cost of solving the same concomitant objective with different
-algorithms. Scale updates are inexpensive, but the number of coefficient
-sweeps can change substantially. Completion rates and numerical accuracy
-therefore accompany runtime results. The revised prediction experiment uses model-specific null anchors and
-includes certified zero-scale solutions. These are prediction results for
-the specified tuning procedure, rather than a general comparison of estimator
-risk. In particular, an estimated scale of zero is a valid boundary solution
-of the stated objective, not an estimate of positive residual noise.
-The implementation, experiment
-drivers and Quarto source retain data, configuration, environment and
-source hashes for every numerical result.
+The experiments separate three questions: implementation cost relative to
+native ROME, the effect of estimating scale with the same Python routines,
+and computation for identical concomitant objectives. Scale updates are
+inexpensive, but changing scale can change coefficient sweeps and boundary
+costs. Accuracy must therefore accompany runtime. The two prediction studies
+illustrate the specified tuning procedures. They do not establish a general
+risk advantage. A zero-scale solution is a valid optimum of the closed
+objective, rather than an estimate of positive residual noise.
+
+MM is our principal scale update because it gives a simple descent step
+using only the residuals. Direct scalar minimization and joint-proximal
+splitting remain available in the software. Supplement S6 derives these
+alternatives and reports their numerical comparison. The available evidence
+does not establish that MM is uniformly fastest.
 
 # References
+
+::: {#refs}
+:::
+
+{{< pagebreak >}}
+
+{{< include supplement.qmd >}}

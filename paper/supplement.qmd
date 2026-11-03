@@ -1,0 +1,188 @@
+# Supplementary material {.unnumbered}
+
+~~~{=latex}
+\setcounter{table}{0}
+\setcounter{figure}{0}
+\setcounter{algocf}{0}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\thealgocf}{S\arabic{algocf}}
+\renewcommand{\theHtable}{supp.\arabic{table}}
+\renewcommand{\theHfigure}{supp.\arabic{figure}}
+\providecommand{\theHalgocf}{}
+\renewcommand{\theHalgocf}{supp.\arabic{algocf}}
+~~~
+
+# S1. Numerical controls {.unnumbered}
+
+{{< include numerical-controls.qmd >}}
+
+# S2. Coefficient shortcuts and support steps {.unnumbered}
+
+The reference implementation sorts the breakpoints for every active
+coordinate. If the derivative root lies in the current Huber segment,
+this sorting is unnecessary. With current coefficient $b$, residual $r$,
+and fixed $\delta$, we define
+$$
+ g=-n^{-1}\sum_i x_i\psi_\delta(r_i),\qquad
+ L=n^{-1}\sum_i x_i^2\mathbf1_{\{|r_i|<\delta\}},\qquad
+ b^+=S_{\eta/L}(b-g/L).
+$$
+For $L>0$, this is an exact coordinate minimizer whenever every residual
+$r_i-x_i(b^+-b)$ remains in its current quadratic or linear segment.
+Otherwise we use the breakpoint subroutine. The optimized implementation
+also reuses residual buffers and score evaluations, and checks all
+coordinates at intervals of $c_\kappa$ sweeps. Inactivity is provisional after a
+scale change. Termination always requires a full current-scale certificate.
+
+Cheaper sweeps do not remove slow convergence in correlated designs.
+We therefore offer a safeguarded support Newton step at intervals of $p_N$
+sweeps, for supports of at most $q_N$ coefficients. We define $J$ as the current
+nonzero support, including an unpenalized intercept when present, and
+$I=\{i:|r_i|<\rho\sigma\}$. On the current smooth segment, the joint Hessian is
+$$
+ H_J=\frac1{n\sigma}
+ \begin{pmatrix}
+ X_{I,J}^{\top}X_{I,J}&X_{I,J}^{\top}r_I/\sigma\\
+ r_I^{\top}X_{I,J}/\sigma&\|r_I\|_2^2/\sigma^2
+ \end{pmatrix}.
+$$
+Using the gradient $g_J$ on this support, we solve
+$(H_J+\mu I)d=-g_J$, with $\mu=c_H\max_j(H_J)_{jj}$.
+The ridge regularizes the search direction only. Backtracking multiplies the
+step by $\omega$ until the original nonsmooth objective satisfies the Armijo
+inequality with constant $c_A$ and the proposed scale is positive. After $K_N$
+unsuccessful trials, we retain the CD/MM iterate. Fixed-scale fitting uses
+only the coefficient block. Each accepted step decreases the same objective.
+This addition does not alter the estimator or replace exact scalar updates
+by surrogate updates. Disabling polishing recovers the optimized CD/MM
+variant. The original unaccelerated solver remains available for audit.
+
+
+
+{{< include support-step.qmd >}}
+
+# S3. Boundary solutions and simulation accuracy {.unnumbered}
+
+
+Very small scales require the closed perspective rather than a numerical
+scale floor. At $\sigma=0$, we solve the LAD-lasso linear program
+$$
+ \min_\beta\{\rho\|y-X\beta\|_1/n+\lambda_0\|\beta\|_1\}.
+$$
+A dual vector $v$ certifies optimality for the joint problem if
+$$
+ \|v\|_\infty\le\rho,\qquad
+ \|v\|_2^2\le2na,\qquad
+ \|X^\top v/n\|_\infty\le\lambda_0,
+$$
+and its objective $y^\top v/n$ agrees with the primal value.
+An unpenalized intercept instead requires $\mathbf1^\top v=0$.
+We center the LP dual for the intercept and rescale it to satisfy all dual
+inequalities before evaluating the primal--dual gap. A boundary result is
+accepted only when the relative gap is at most $\epsilon$.
+A small scale triggers this check. It does not itself certify convergence.
+This boundary computation also permits continuing the path after a
+certified zero-scale solution.
+
+
+If a positive-scale solve is unsuccessful, the path routine compares its
+objective with that of a boundary LAD-lasso candidate and keeps the smaller.
+An uncertified candidate remains approximate. At a subsequent penalty, a
+certified boundary solution can be continued directly. An uncertified
+zero-scale start also permits restarting the positive-scale iterations at
+$\sigma^{(0)}$. The full Figure 1 experiment visits every penalty and charges
+all candidate selection and boundary work to the path time.
+
+For any feasible dual $v$, we write $D=y^\top v/n$ and we report the normalized
+bound $(F-D)/\max\{1,|F|\}$. Throughout 318/360 joint paths this bound is at
+most $\epsilon_{\rm gap}$. The largest recorded bound is 0.133. It is an
+upper bound on objective error, not a measured error of that size.
+
+{{< include ../analysis/outputs/optimized-paper/rome-completion.qmd >}}
+
+: Returned paths and independent accuracy checks over the full simulation grid. Native completion uses ROME's stopping rule. The Python counts require their stated optimality checks. {#tbl-rome-completion}
+
+The source audit distinguishes compiled C from Numba-compiled Python,
+pathwise screening, stopping rules and boundary-LP work. It also records an
+isolated discrepancy in the pinned native coordinate routine. For
+$x=(1,1,1)$, $u=(-1,0.2,0.5)$, $\delta=0.5$ and $\eta=0.1$, the derivative
+at zero is $-1/15$, so zero minimizes the scalar objective. The native
+coordinate routine returns approximately 0.08235, increasing the objective
+by approximately 0.00501. An installed-R call without screening reproduces
+the discrepancy. Adaptive screening avoids it in this minimal example.
+This does not establish its frequency in full fits. Native ROME is unchanged
+in the experiment. The source checks and reproductions are retained in the
+implementation-audit materials.
+
+# S4. R4 normalization and additional timings {.unnumbered}
+
+The R4 mean-shift Path-Alg uses the augmented concomitant least-squares data
+$$
+ A_{\rm aug}=\sqrt2[X,\{\lambda_{\rm classo}/(2\rho)\}I_n],\qquad
+ y_{\rm aug}=\sqrt2y,\qquad \sigma=\sigma_{\rm aug}/2.
+$$
+The path branch is called directly with zero Gram correction. The unconstrained
+DR implementation uses $c_{\rm DR}$ without changing its update equations.
+Both methods are compared with CD using the original averaged perspective
+objective, not an augmented surrogate objective.
+
+At positive scale, we define $g=-X^\top\psi_\rho(r/\sigma)/n$. The common continuous
+coefficient residual is
+$$
+ \|\beta-S_{\lambda_0}(\beta-g)\|_\infty.
+$$
+This residual and $R_\sigma$ must be at most $\epsilon_{\rm R4}$, and the
+relative objective difference from the high-accuracy reference must be at
+most $\epsilon_{\rm obj}$. The comparison therefore assesses solutions
+before timing ratios. Setup, prepared solve and total call times are saved
+separately. The synthetic trajectory uses seed 91 and a full-rank design.
+Coefficient agreement on that example is not a uniqueness claim for every
+high-dimensional problem.
+
+{{< include ../analysis/outputs/revision-r4/results.qmd >}}
+
+: Median prepared solve times. Counts give calls passing the common accuracy checks for CD, Path-Alg and DR, each out of six. {#tbl-r4}
+
+An additional four-dataset study uses five paired timing repetitions with the
+same optimized Python coefficient routines for fixed and concomitant scale,
+common penalties, and identical coefficient tolerances. Medians include only
+pairs with complete, independently certified paths. This diagnostic predates
+the full-grid Figure 1 rerun and does not replace it. It uses the simulation
+controls, with path-time safeguard $T_{\rm path}$.
+
+{{< include ../analysis/outputs/python-scale-timing/results.qmd >}}
+
+: Paired fixed-scale and concomitant Python path times on four saved datasets. Repetitions measure timing variability, not additional simulated samples. {#tbl-python-scale}
+
+# S5. Prediction grids and the matched AMP problem {.unnumbered}
+
+For each CV training fold, the penalty grid uses that model's optimized
+intercept-only null fit. For the positive-scale concomitant null optimum
+$(b_{\rm null},\sigma_{\rm null})$,
+$$
+ \lambda_{\max}^{\rm con}=n^{-1}\left\|X^\top\psi_\rho
+ \left((y-b_{\rm null}\mathbf1)/\sigma_{\rm null}\right)\right\|_\infty.
+$$
+The fixed-scale anchor uses its optimized null intercept at the fixed scale.
+The anchors remain fixed while traversing each path. A shared fixed-scale
+anchor would not identify the same relative penalty range for both models.
+Each fold fits its own column filter and predictor/response transformations.
+Fifty fractions from 1 to $10^{-3}$ define the grids. CV uses pooled validation
+MSE and the tie rule in Supplement S1. Final refits repeat preprocessing on
+the outer training set. All selected refits satisfy the required accuracy.
+Two concomitant inner-CV grids have 49 eligible penalties instead of 50.
+
+![Inner-fold prediction error on model-specific penalty grids and held-out prediction for the first split of each dataset. Filtering and standardization use only the relevant training observations. Certified zero-scale fits are included.](../analysis/outputs/optimized-paper/real-data.pdf){#fig-real width=100%}
+
+The separate matched AMP instance uses split seed 20261006 and the
+source-paper global predictor-only filter. This protocol differs from the
+training-only filter used to estimate prediction error. All five timed calls
+per method use the same filtered matrix and the stated AMP normalization.
+Filtering, preprocessing, compilation and calibration search are excluded.
+The supplied AMP manuscript is unpublished, and its source is not
+redistributed. The source registry records the required checksums.
+
+# S6. Alternative scale updates {.unnumbered}
+
+{{< include scale-options.qmd >}}
