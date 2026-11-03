@@ -1,0 +1,124 @@
+---
+title: "ROME and Python: implementation and accuracy audit"
+format:
+  html:
+    embed-resources: true
+---
+
+## What is compiled?
+
+Native ROME calls compiled C through R's `.C` interface. Our coordinate
+search, coefficient sweeps, scale block and support polishing are compiled
+with Numba's `njit`, which requires compilation without Python object mode.
+The Python path loop dispatches one compiled solve per penalty. Its first-use
+compilation is excluded from the timings. The boundary LP is solved by SciPy's
+compiled HiGHS backend. Thus the observed difference is not interpreted-code
+execution versus C. Native ROME handles the entire path in one compiled call;
+our current Python driver dispatches each penalty separately.
+The Python, R and installed ROME shared-library binaries are all x86-64 in
+this environment; a mixed-architecture comparison is not the explanation.
+
+## Different amounts of work
+
+The checked ROME source is commit
+`99d6f07e2f5daa262768387701af7769dfbc2212`. Its
+`ecd_huber_benchmarktest_` branch is selected by the Figure1 call:
+`adapt=FALSE`, adaptive screening and KKT checks. It stops inner sweeps when
+$$
+\max_j\left\{\frac{\|x_j\|_2^2}{n}
+(\beta_j^{k+1}-\beta_j^k)^2\right\}
+<\epsilon\sum_i h_{0.5}(y_i).
+$$
+Its subsequent KKT repair checks predictors outside the included set. This
+is different from our full current coefficient stationarity requirement at
+$10^{-6}$. The numerical value `eps=1e-4` is not a KKT tolerance and cannot
+be directly equated to the Python tolerance. In particular, the original
+right-hand side depends on sample size and the unscaled null loss.
+
+ROME retains its included predictors and screening information across
+penalties and caches predictor squares and thresholds for the whole path.
+Python currently initializes its working set to all predictors at each new
+penalty, then drops zero coefficients within that solve and repairs the set
+using full KKT checks. Transferring suitable screening and cached predictor
+quantities across penalties is a concrete optimization opportunity, provided
+screening is rechecked when scale changes.
+
+For each visited coordinate, ROME's C primitive allocates and sorts all
+$2n$ Huber knots. Python first tests a local affine root and verifies that
+it remains in the current Huber cell. A verified root is an exact coordinate
+solution and avoids sorting. Otherwise it invokes the exact knot sweep.
+The current fallback allocates knot/jump arrays and sorts its forward knots;
+there is also scope to reuse those buffers. Python additionally uses optional
+support Newton polishing; both Python modes in Figure1 use the same setting.
+
+## Measured examples
+
+{{< include outputs/implementation-audit/timings.qmd >}}
+
+These examples are individual datasets, not replication averages. Joint LP
+share is directly measured CPU time inside boundary LP calls divided by total
+prepared path CPU. It includes repeated boundary solves along the path.
+Other differences, including iteration counts, screening, knot sorting and
+polishing, are source-level mechanisms; this audit does not assign them
+separate timing percentages without a component profiler.
+
+{{< include outputs/implementation-audit/work.qmd >}}
+
+Native sweep counts come from separate deterministic reruns with the same
+settings, checked against the saved native coefficient paths. Python counts
+come from the primary timing records. A sweep need not visit the same set
+of coordinates in the two implementations. Counts explain work differences;
+they are not equal-cost operations, and joint LP work is additional.
+
+One specific optimization opportunity is avoiding repeated boundary LPs.
+For a certified zero-scale solution with $X\beta=y$, decreasing the penalty
+from $\lambda$ to $\lambda'$ permits scaling its feasible dual by
+$\lambda'/\lambda$. The primal and dual objectives both scale by the same
+factor, so the same coefficient vector remains optimal. More generally,
+the rescaled dual supplies a checkable gap for a reused boundary candidate.
+The audit records where this check would pass on saved solutions. It does
+not change the timed solver or claim a measured speedup from that opportunity.
+
+{{< include outputs/implementation-audit/reuse-findings.qmd >}}
+
+## A verified coordinate-level discrepancy
+
+The original C coordinate function is also checked independently. Consider
+$x=(1,1,1)^\top$, partial residual $u=(-1,0.2,0.5)^\top$,
+$\delta=0.5$ and penalty $0.1$. The coordinate objective is
+$$
+g(b)=\frac13\sum_{i=1}^3h_{0.5}(u_i-b)+0.1|b|.
+$$
+At zero, the smooth derivative is $-1/15$, which lies in $[-0.1,0.1]$;
+therefore $b=0$ is a global minimizer. The pinned C primitive returns
+$b=0.0823529411764706$, with objective excess approximately $0.005006$.
+Our coordinate routine and independent scalar optimization return zero.
+The source interpolates derivative values across knots without explicitly
+handling the L1 subgradient jump at zero in this case.
+
+The installed R package reproduces the nonzero result when screening is
+disabled. With adaptive screening it returns zero on this single-variable
+example, because the coordinate can be screened out. Thus this is a verified
+primitive and unscreened-entry discrepancy, not a claim that every screened
+ROME fit is affected. The audit checks 22 declared coordinate fixtures,
+including a repeated-pattern zero-optimum example with $n=100$;
+that sample is not a whole-package failure-rate estimate. Native ROME remains
+unchanged throughout the timing experiment.
+
+## Interpretation
+
+Our fixed-scale Python solver is not uniformly slower. Where joint Python
+is much slower, measured boundary LP work can dominate. Where fixed Python
+is slower, different stopping accuracy and substantial coefficient work on
+correlated data must be examined before attributing the difference to the
+compiler. Current native-runtime comparisons therefore need their explicit
+accuracy qualification. The source discrepancy is a further reason to check
+objectives and stationarity independently, rather than copying native returns
+as unquestioned reference solutions.
+
+## Reproduction
+
+After `make figure1-complete`, run `python analysis/implementation_audit.py`
+and render this report. Raw coordinate checks, an installed-R reproduction,
+selected path timings, source hashes and a compiled verbatim C test primitive
+are retained under `analysis/outputs/implementation-audit/`.

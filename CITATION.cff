@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "Please cite this software and the methodological references in paper/references.bib."
+type: software
+title: "ROME for Python: fixed-scale and concomitant robust M-estimation"
+version: 0.0.1
+date-released: 2026-10-20
+authors:
+  - name: "ROME for Python contributors"
+license: GPL-3.0-only
+abstract: "Research implementation of fixed-scale and concomitant sparse Huber regression."

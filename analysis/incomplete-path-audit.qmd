@@ -1,0 +1,113 @@
+---
+title: "Audit of incomplete concomitant Huber paths"
+format: html
+---
+
+# Scope
+
+This audit addresses the first failed penalty in each of seven ROME-validation
+paths. It preserves the historical 2000-sweep results and uses their saved
+coefficient vectors and scales as initial states. It does not rerun or rank
+whole paths. Diagnostic state recording and independent optimization are
+excluded from timing comparisons.
+
+Run python analysis/audit_incomplete_paths.py. All numerical results below
+come from package coordinate/MM kernels; each instrumented continuation must
+reproduce an ordinary production warm solve to $10^{-13}$.
+
+# Independent objective bounds
+
+For
+$$
+F(\beta,\sigma)=\frac1n\sum_i\sigma h_\rho((y_i-X_i^\top\beta)/\sigma)
++a\sigma+\lambda_0\|\beta\|_1,
+$$
+the closed perspective has the dual
+$$
+\sup_{v\in\mathbb R^n}\frac{y^\top v}{n}
+\quad\text{subject to}\quad
+\|v\|_\infty\le\rho,\qquad
+\|X^\top v/n\|_\infty\le\lambda_0,\qquad
+\frac{\|v\|_2^2}{2n}\le a .
+$$
+Indeed, $h_\rho^*(v)=v^2/2+\iota_{[-\rho,\rho]}(v)$; minimizing
+the coefficient and nonnegative scale blocks gives the last two constraints.
+Every feasible $v$ supplies a lower bound, independently of a dual optimizer's
+success flag. We solve this smooth constrained problem with SLSQP and rescale
+its returned vector into feasibility with a small inward numerical margin.
+One SLSQP run reports a line-search failure; its feasible rescaled vector is
+retained and still supplies a tight lower bound. These are floating-point
+feasibility checks, not interval-arithmetic certificates.
+
+The boundary problem is independently solved by a HiGHS linear program:
+$$
+F_{\partial}=\min_\beta
+\frac{\rho}{n}\|y-X\beta\|_1+\lambda_0\|\beta\|_1.
+$$
+The LP dual multipliers are also rescaled into feasibility. At every audited
+point, their lower bound exceeds the objective of the saved positive-scale
+iterate. Subject to floating-point feasibility accuracy, this excludes
+a global zero-scale solution at that penalty.
+
+# Controlled continuations
+
+The main continuation uses the unchanged batch size $B=8$, tolerance
+$10^{-6}$ and a prespecified budget of 4000 **additional** sweeps. Diagnostic
+variants use $B=1$, $B=64$, or freeze scale at its saved value, each with 2000
+additional sweeps. There is no iterative budget search. Frozen-scale convergence
+certifies its coefficient block only; its scale score need not vanish.
+
+{{< include outputs/incomplete-path-audit/results.qmd >}}
+
+All seven main continuations satisfy the original joint stopping test.
+The $B=64$ sweep counts equal the $B=8$ counts in all seven cases. The $B=1$
+counts differ by only two sweeps in one case. Freezing scale still requires
+44--1645 coefficient sweeps.
+
+The original primal-minus-dual bounds range from approximately
+$5.5\times10^{-11}$ to $1.4\times10^{-7}$, despite coefficient KKT residuals
+above $10^{-6}$. Final main-continuation gaps are below $3\times10^{-10}$.
+Recomputed residuals reproduce the kernel's coefficient scores to within
+$5\times10^{-14}$, providing no evidence of consequential residual drift.
+
+# Local conditioning
+
+With active coordinates $A$ and central residuals
+$I=\{i:|r_i|<\rho\sigma\}$, away from kinks and sign changes the smooth
+joint Hessian is
+$$
+H=\frac1{n\sigma}\sum_{i\in I}
+\begin{pmatrix}X_{i,A}\\ r_i/\sigma\end{pmatrix}
+\begin{pmatrix}X_{i,A}\\ r_i/\sigma\end{pmatrix}^{\!\top}.
+$$
+It has full local rank at all seven saved points, with numerical condition
+numbers approximately $8.9\times10^3$ to $5.5\times10^5$. Both Block-AR cases
+have only two active coefficients; the largest predictor RMS ratio exceeds
+100. Thus active-set size alone does not explain sweep counts.
+
+The local Jacobian of a scale-MM step is
+$M_\sigma=I-\{\sigma/(2a)\}e_\sigma e_\sigma^\top H$.
+For exact coefficient coordinate $j$,
+$M_j=I-e_je_j^\top H/H_{jj}$.
+The idealized full-sweep map with $B$ scale steps has Jacobian
+$$
+M_A\cdots M_1M_\sigma^B.
+$$
+Its spectral radius is approximately $0.995$--$0.999$ for $B=8$ at the
+saved states. These are local diagnostics on the current smooth branch:
+active sets and Huber regions may change, and early stopping of a scale
+batch changes the realized map. They are not a global convergence theorem.
+
+![Scale, objective bound, and coefficient stationarity during additional sweeps. Frozen scale solves a different restricted problem and is a diagnostic only.](outputs/incomplete-path-audit/diagnostics.png)
+
+# Implication
+
+The evidence identifies slow coefficient convergence under a strict absolute
+stationarity criterion at these seven points. More scale updates are not the
+appropriate remedy. An objective-preserving acceleration of correlated active
+coordinates is the next solver experiment; compare it against the unchanged
+cyclic baseline with identical objective and joint accuracy checks. Do not
+weaken the historical gates or infer completion of the remaining path tails.
+
+The fixed-scale comparison and the unconstrained c-lasso R4 comparison remain
+equally important. This audit changes neither comparator nor the timing results.

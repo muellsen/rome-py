@@ -1,0 +1,13 @@
+include LICENSE
+include README.md
+include CITATION.cff
+include THIRD_PARTY.md
+recursive-include src/concomitant_huber *.py
+recursive-include src/rome_py *.py
+exclude AGENTS.md Makefile _quarto.yml
+prune analysis
+prune paper
+prune sources
+prune skills
+prune tests
+prune .github

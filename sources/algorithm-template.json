@@ -1,0 +1,18 @@
+{
+  "algorithm2e": {
+    "url": "https://mirrors.ctan.org/macros/latex/contrib/algorithm2e.zip",
+    "sha256": "1893a76fd3fb59d49fd484674d27e744a773ce1904bde073d85e92123a6d671a"
+  },
+  "ifoddpage": {
+    "url": "https://mirrors.ctan.org/macros/latex/contrib/ifoddpage.zip",
+    "sha256": "a15f5da4469041f771a36f022cc323725e756467a5f16f5e5e6e654d8586efaf"
+  },
+  "relsize": {
+    "url": "https://mirrors.ctan.org/macros/latex/contrib/relsize.zip",
+    "sha256": "9648ab6b75b5223c47613f220f0d114aa2cb6726a50bc1d67bfab868d28d7053"
+  },
+  "ydoc": {
+    "url": "https://mirrors.ctan.org/macros/latex/contrib/ydoc.zip",
+    "sha256": "fa89ce00adfaecb13d506fbb7788fd7121cf3383371a34e54a8cbc84719c6ba7"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "package": "c-lasso",
+  "version": "1.0.11",
+  "files": [
+    {
+      "path": "sources/classo-1.0.11-audit/solve_R4.py",
+      "sha256": "7c8504ac9a5a577f0eb59d0024f8d19f369f4651fe38ad752e2ee51cce9c49e3"
+    },
+    {
+      "path": "sources/classo-1.0.11-audit/solve_R3.py",
+      "sha256": "94434961e32a495308f54ff27b077b0ebc14eeb8edf83c9496dd0ac49273edbb"
+    },
+    {
+      "path": "sources/classo-1.0.11-audit/path_alg.py",
+      "sha256": "8d267b48f1dc61cf1ffcdcad6de2b75b12c7252328d463ec7b6ca41b5c03d6b4"
+    },
+    {
+      "path": "sources/classo-1.0.11-audit/compact_func.py",
+      "sha256": "7c3df316aef74d1f26223e594bce24055c98fec0c9fcd5867a31aeaf37e67042"
+    },
+    {
+      "path": "sources/classo-1.0.11-audit/solver.py",
+      "sha256": "7e5575586695ad70183cf7b5fc8e8cca4978e6c06f24978fd32c4f84357b9090"
+    },
+    {
+      "path": "sources/classo-1.0.11-audit/misc_functions.py",
+      "sha256": "c5a62bfe1e11bdd1065d8a70ebb45674e369d31d0162df29f520c5a053220a24"
+    }
+  ]
+}

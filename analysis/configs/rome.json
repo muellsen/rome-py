@@ -1,0 +1,123 @@
+{
+  "experiment": "rome-Section4.1-paired-extension",
+  "source": "arXiv:2510.13715v3 and rome commit 99d6f07e2f5daa262768387701af7769dfbc2212",
+  "dimensions_full": [
+    [
+      100,
+      100
+    ],
+    [
+      100,
+      500
+    ],
+    [
+      100,
+      1000
+    ],
+    [
+      500,
+      100
+    ],
+    [
+      500,
+      500
+    ],
+    [
+      500,
+      1000
+    ],
+    [
+      1000,
+      100
+    ],
+    [
+      1000,
+      500
+    ],
+    [
+      1000,
+      1000
+    ]
+  ],
+  "designs": [
+    "Compound-N",
+    "AR-t2",
+    "Contaminated-AR",
+    "Block-AR"
+  ],
+  "replications_full": 100,
+  "validation_dimensions": [
+    [
+      100,
+      100
+    ],
+    [
+      100,
+      500
+    ],
+    [
+      500,
+      100
+    ]
+  ],
+  "validation_seeds": [
+    71
+  ],
+  "beta_first16": [
+    2,
+    0,
+    1.5,
+    0,
+    0.8,
+    0,
+    0,
+    1,
+    0,
+    1.75,
+    0,
+    0,
+    0.75,
+    0,
+    0,
+    0.3
+  ],
+  "noise": "independent N(0,1)",
+  "standardization": "none",
+  "intercept": false,
+  "fixed_delta": 0.5,
+  "alpha": 1,
+  "path": {
+    "length": 100,
+    "lambda_max": "max abs X.T clip(y,-0.5,0.5) / n",
+    "lambda_l": "lambda_max * exp(log(0.05)*l/100), l=1..100"
+  },
+  "comparators": [
+    "original R rome fixed-scale path",
+    "concomitant MM-CD warm path"
+  ],
+  "concomitant": {
+    "rho": 0.5,
+    "a": "analytic Gaussian scale-score calibration",
+    "initial_sigma": 1.0,
+    "lambda0": "same absolute path; inner lambda=sigma*lambda0",
+    "scale_mm_steps": 8,
+    "tol": 1e-06,
+    "max_sweeps_per_penalty": 2000,
+    "stop_path_on_uncertified": true
+  },
+  "original_rome": {
+    "screen": "adaptive",
+    "KKT": true,
+    "eps": 0.0001,
+    "max.iter": 100000,
+    "wall_budget_seconds": 60
+  },
+  "exclusions": [
+    "ILAMM",
+    "hqreg",
+    "glmnet"
+  ],
+  "scope": "Full protocol matches Section4.1 design families, dimensions, repetitions and executable 100-penalty grid; validation is a declared subset, not the full benchmark.",
+  "source_discrepancy": "Section3.2 prose gives default minimum ratio .001; supplied Section4_1.R experiment explicitly uses .05. This benchmark follows the experimental code.",
+  "seed_note": "Same distributions, not identical R random-number streams; each pair receives identical saved X,y,lambda."
+}

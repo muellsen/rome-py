@@ -1,0 +1,225 @@
+## Three interchangeable scale blocks
+
+We retain three options in the software and in the current manuscript:
+a finite MM batch, numerical exact scalar minimization, and local joint
+proximal updates with common-scale projection. They use the same coefficient
+subroutine, objective, and outer joint certificate. No option is selected
+as the principal method in this revision. After a broader comparison, the
+selected option will remain in the main text and the other two will move
+to the Appendix; all three will remain available in the package.
+
+For fixed residuals, write
+$$
+ f_r(\sigma)=\frac1n\sum_i\sigma h_\rho(r_i/\sigma)+a\sigma,
+ \qquad f_r(0)=\frac\rho n\|r\|_1.
+$$
+If $M=\|r\|_\infty>0$, set $q=r/M$ and $t=\sigma/M$.
+Then $f_r(Mt)=M f_q(t)$, so normalization changes neither the minimizing
+scale nor the sign of an objective difference. Let $m=\#\{i:q_i\ne0\}$.
+If $M=0$ or $2na\ge m\rho^2$, zero is a scale-block minimizer; equality
+can give a nonunique interval of minimizing scales, and we choose zero.
+This block conclusion does not certify the regression coefficients.
+
+For $t>0$,
+$$
+ D_q(t)=f_q'(t)=a-\frac1{2n}\sum_i
+              \min\{q_i^2/t^2,\rho^2\},\qquad
+ D_q(0+)=a-\frac{m\rho^2}{2n}.
+$$
+The derivative is nondecreasing. Define the block stationarity residual
+$$
+ E_q(t)=\begin{cases}|D_q(t)|,&t>0,\\[-2pt]
+                     (-D_q(0+))_+,&t=0.\end{cases}
+$$
+We also use a dual certificate. Set $w_i=\psi_\rho(q_i/t)$ for $t>0$
+and $w_i=\rho\operatorname{sign}(q_i)$ for $t=0$, and define
+$$
+ \theta=\min\{1,\sqrt{2na}/\|w\|_2\},\quad v=\theta w,
+ \qquad
+ \Delta_q(t)=\frac{f_q(t)-q^\top v/n}{\max\{1,f_q(t)\}}.
+$$
+For $w=0$, take $\theta=1$. Since $\|v\|_\infty\le\rho$ and
+$\|v\|_2^2\le2na$, the numerator is a valid primal--dual gap for the
+fixed-residual scale problem. In floating point its negative roundoff is
+replaced by zero. Write $C_q(t)=\max\{E_q(t),\Delta_q(t)\}$.
+An exact or proximal block return is numerically certified when
+$C_q(t)\le\epsilon_\sigma$. A finite MM batch need not satisfy this
+condition; its inner status is reported separately from outer convergence.
+
+**Option A: MM.** Algorithm 4 takes at most $B$ MM steps. Each step
+minimizes the tangent majorizer derived above. A finite batch is a descent
+update, not exact minimization of $f_q$.
+
+**Option B: scalar root.** Algorithm 5 solves $D_q(t)=0$ by bisection,
+using the bracket
+$$
+ 0\le t_*\le\frac{\|q\|_2}{\sqrt{2na}}.
+$$
+The previous scale tightens this bracket. This option minimizes the
+original scalar block to its declared certificate tolerance; the label
+`exact` distinguishes that target from a finite surrogate batch, rather
+than asserting symbolic or infinite-precision arithmetic. Equivalently,
+on a consistent inlier set $I=\{i:|q_i|\le\rho t_*\}$,
+$$
+ t_*^2=\frac{\sum_{i\in I}q_i^2}{2na-(n-|I|)\rho^2},
+$$
+when the denominator is positive. The implementation uses the monotone
+root equation and does not assume that $I$ is known.
+
+**Option C: local joint prox and consensus.** Define the closed perspective
+$\phi(u,s)=s h_\rho(u/s)+as$, and
+$$
+ \mathcal S_q=\{(u,s):u=q,\ s=t\mathbf1\},\qquad
+ P_{\mathcal S_q}(u,s)=(q,\bar s\mathbf1).
+$$
+The lifted problem is
+$$
+ \min_{u,s}\ \sum_i\phi(u_i,s_i)+\iota_{\mathcal S_q}(u,s).
+$$
+Its objective on $\mathcal S_q$ is $n f_q(t)$. Thus multiplying the
+averaged scale objective by $n$ makes each local proximal term
+$\phi$, with step size $\gamma$; no additional factor $1/n$ is applied
+inside these proxs. The scale coefficient $a$ appears once per local
+term, producing the required $na t$ in the unaveraged objective.
+
+Algorithm 6 applies Douglas--Rachford splitting to this sum and affine
+constraint. With $\Phi(u,s)=\sum_i\phi(u_i,s_i)$, its updates are
+$$
+ p^{(k)}=\operatorname{prox}_{\gamma\Phi}(z^{(k)}),\qquad
+ z^{(k+1)}=z^{(k)}+P_{\mathcal S_q}(2p^{(k)}-z^{(k)})-p^{(k)}.
+$$
+The local operation is the joint perspective prox of
+@combettes2020 [Example 2.5], specialized to the present normalization.
+For $x=u/\gamma$ and $z=s/\gamma$, define
+$$
+ v(\mu)=\operatorname{sign}(x)
+       \min\{|x|/(1+\mu),\rho\},\qquad
+ H(\mu)=z-\mu+\tfrac12v(\mu)^2-a.
+$$
+If $H(0)\le0$, take $\mu=0$; otherwise $H$ has a unique positive root.
+The local prox is
+$$
+ \operatorname{prox}_{\gamma\phi}(u,s)
+       =(u-\gamma v(\mu),\gamma\mu).
+$$
+Algorithm 7 evaluates this prox by a scalar root with interval tolerance
+$10^{-14}\max\{1,\mu\}$ and at most 80 halvings. It handles negative
+splitting-scale inputs and the zero-scale output without a scale floor.
+The projected primal shadow has scale $\bar p_s\ge0$, while its residuals
+are fixed at $q$. Splitting iterations need not decrease $f_q$ monotonically.
+We therefore retain the best feasible shadow with objective no larger than
+$f_q(t^{(0)})$. A truncated proximal solve can supply a descent step, but is
+not reported as an exact block solve unless its certificate passes.
+
+| Scale option | Numerical work | Inner termination | Outer acceptance |
+|:--|:--|:--|:--|
+| `mm` | At most $B$ tangent-majorizer updates | $C_q(t)\le\epsilon_\sigma$ or batch limit | Descent; inner status retained |
+| `exact` | Bracketed root of $D_q$ | $C_q(t)\le\epsilon_\sigma$ or root budget | Descent; certificate required for an exact-block label |
+| `prox` | Local joint proxs and consensus splitting | $C_q(\bar p_s)\le\epsilon_\sigma$ or splitting budget | Best feasible descent shadow; inner status retained |
+
+The common numerical guard retains the previous scale if a proposed value
+increases the block objective. The defaults are $B=8$,
+$\epsilon_\sigma=\epsilon/2$, an inner limit of 2000 for root and splitting
+iterations, and normalized proximal step size $\gamma=1$. All methods still
+require the full outer coefficient--scale certificate. Fixed-scale fitting
+bypasses the scale block entirely. Optional support Newton polishing is
+available equally to all three; it is disabled in the comparison below.
+
+::: {.content-visible when-format="pdf"}
+
+~~~{=latex}
+\begin{algorithm}[H]
+\small\setstretch{1}\DontPrintSemicolon
+\caption{\addition{$\mathrm{ScaleMM}(q,t^{(0)};B,\epsilon_\sigma)$}}
+\KwInput{$q\in\mathbb R^n\setminus\{0\},\ t^{(0)}\ge0;\quad \rho,a,\epsilon_\sigma>0,\ B\in\mathbb N_+,\ 2na<\rho^2\#\{i:q_i\ne0\}$}
+\KwOutput{$(t,b,\nu)\in[0,\infty)\times\mathbb N_0\times\{0,1\}$}
+\addition{
+$t\leftarrow t^{(0)}$; $b\leftarrow0$\;
+\While{$b<B\ \mathrm{and}\ C_q(t)>\epsilon_\sigma$}{
+ $t\leftarrow\{(2an)^{-1}\sum_i\min(q_i^2,\rho^2t^2)\}^{1/2}$; $b\leftarrow b+1$\;
+}
+\If{$f_q(t)>f_q(t^{(0)})$}{$t\leftarrow t^{(0)}$}
+\KwReturn{$(t,b,\mathbf1_{\{C_q(t)\le\epsilon_\sigma\}})$}
+}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\small\setstretch{1}\DontPrintSemicolon
+\caption{\addition{$\mathrm{ScaleRoot}(q,t^{(0)};T,\epsilon_\sigma)$}}
+\KwInput{$q\in\mathbb R^n\setminus\{0\},\ t^{(0)}\ge0;\quad \rho,a,\epsilon_\sigma>0,\ T\in\mathbb N_+,\ 2na<\rho^2\#\{i:q_i\ne0\}$}
+\KwOutput{$(t,b,\nu)\in[0,\infty)\times\mathbb N_0\times\{0,1\}$}
+\addition{
+\If{$C_q(t^{(0)})\le\epsilon_\sigma$}{\KwReturn{$(t^{(0)},0,1)$}}
+$\ell\leftarrow0$; $h\leftarrow\|q\|_2/\sqrt{2na}$\;
+\eIf{$D_q(t^{(0)})<0$}{$\ell\leftarrow t^{(0)}$}{$h\leftarrow\min(h,t^{(0)})$}
+\For{$b=1,\ldots,T$}{
+ $t\leftarrow(\ell+h)/2$\;
+ \If{$C_q(t)\le\epsilon_\sigma$}{\textbf{break}}
+ \eIf{$D_q(t)<0$}{$\ell\leftarrow t$}{$h\leftarrow t$}
+}
+\If{$f_q(t)>f_q(t^{(0)})$}{$t\leftarrow t^{(0)}$}
+\KwReturn{$(t,b,\mathbf1_{\{C_q(t)\le\epsilon_\sigma\}})$}
+}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\small\setstretch{1}\DontPrintSemicolon
+\caption{\addition{$\mathrm{ScaleProx}(q,t^{(0)};T,\epsilon_\sigma,\gamma)$}}
+\KwInput{$q\in\mathbb R^n\setminus\{0\},\ t^{(0)}\ge0;\quad \rho,a,\epsilon_\sigma>0,\ T\in\mathbb N_+,\ 2na<\rho^2\#\{i:q_i\ne0\}$}
+\KwInput{$\gamma>0$}
+\KwOutput{$(t,b,\nu)\in[0,\infty)\times\mathbb N_0\times\{0,1\}$}
+\addition{
+\If{$C_q(t^{(0)})\le\epsilon_\sigma$}{\KwReturn{$(t^{(0)},0,1)$}}
+$z_u\leftarrow q$; $z_s\leftarrow t^{(0)}\mathbf1$; $t_*\leftarrow t^{(0)}$\;
+\For{$b=1,\ldots,T$}{
+ \For{$i=1,\ldots,n$}{$(p_{u,i},p_{s,i})\leftarrow\mathrm{JointProx}(z_{u,i},z_{s,i};\gamma)$}
+ $t\leftarrow n^{-1}\sum_i p_{s,i}$\;
+ \If{$f_q(t)<f_q(t_*)$}{$t_*\leftarrow t$}
+ \If{$C_q(t)\le\epsilon_\sigma\ \mathrm{and}\ f_q(t)\le f_q(t^{(0)})$}{\KwReturn{$(t,b,1)$}}
+ $c\leftarrow n^{-1}\sum_i(2p_{s,i}-z_{s,i})$\;
+ $z_u\leftarrow z_u+q-p_u$; $z_s\leftarrow z_s+c\mathbf1-p_s$\;
+}
+\KwReturn{$(t_*,T,\mathbf1_{\{C_q(t_*)\le\epsilon_\sigma\}})$}
+}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\small\setstretch{1}\DontPrintSemicolon
+\caption{\addition{$\mathrm{JointProx}(u,s;\gamma)$}}
+\KwInput{$u,s\in\mathbb R;\quad \gamma,\rho,a>0$}
+\KwOutput{$\operatorname{prox}_{\gamma\phi}(u,s)$}
+\addition{
+$x\leftarrow u/\gamma$; $z\leftarrow s/\gamma$;
+$v(\mu)\leftarrow\operatorname{sign}(x)\min\{|x|/(1+\mu),\rho\}$\;
+$H(\mu)\leftarrow z-\mu+v(\mu)^2/2-a$\;
+\If{$H(0)\le0$}{\KwReturn{$(u-\gamma v(0),0)$}}
+$\ell\leftarrow0$; $h\leftarrow H(0)$\;
+\For{$j=1,\ldots,80$}{
+ $\mu\leftarrow(\ell+h)/2$\;
+ \eIf{$H(\mu)>0$}{$\ell\leftarrow\mu$}{$h\leftarrow\mu$}
+ \If{$h-\ell\le10^{-14}\max\{1,\mu\}$}{\textbf{break}}
+}
+$\mu\leftarrow(\ell+h)/2$\;
+\KwReturn{$(u-\gamma v(\mu),\gamma\mu)$}
+}
+\end{algorithm}
+~~~
+
+:::
+
+## Validation without method selection
+
+The software exposes `FastHuberCD(scale_update="mm")`, `"exact"`, and
+`"prox"`, together with the fixed-residual `update_scale` function.
+The comparison below uses three declared $n=45,p=8$ fixtures and three
+timing repeats per method, with common starts, penalty, coefficient kernel,
+outer tolerance and inner certificate tolerance. Independent reference fits
+use the original solver at tolerance $10^{-9}$; each compared return is
+externally checked at $10^{-7}$ and relative objective difference $10^{-8}$.
+Compilation and reference fitting are outside the reported fit times.
+
+{{< include ../analysis/outputs/scale-strategies/results.qmd >}}
+
+: Preliminary implementation validation of the three scale options. Inner iteration counts are method-specific work counts, not equivalent operations. {#tbl-scale-strategies}
+
+{{< include ../analysis/outputs/scale-strategies/findings.qmd >}}

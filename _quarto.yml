@@ -1,0 +1,26 @@
+project:
+  type: default
+  output-dir: _build
+  render:
+    - paper/manuscript.qmd
+execute:
+  enabled: false
+format:
+  html:
+    include-in-header:
+      text: "<style>.addition { color: blue; }</style>"
+    toc: true
+    number-sections: true
+  pdf:
+    documentclass: article
+    fontsize: 12pt
+    classoption: letterpaper
+    linestretch: 1.5
+    number-sections: true
+    include-in-header: paper/jcgs-preamble.tex
+    geometry: margin=1in
+    keep-tex: true
+bibliography: paper/references.bib
+
+filters:
+  - paper/blue-additions.lua

@@ -1,0 +1,13 @@
+{
+  "status": "optional unpublished local inputs; not distributed",
+  "files": [
+    {
+      "path": "sources/amp-aistats2027/perspective_huber_ramp_solver.py",
+      "sha256": "86a692251fafbcc850b6fcdc5596e214d16630ce02fc24b56c54b8107546746f"
+    },
+    {
+      "path": "sources/amp-aistats2027/riboflavin.py",
+      "sha256": "86d1b89023df0feb547a28e1b4633e7a0ee3ff12411a85f6ab40ccda1f21e6e0"
+    }
+  ]
+}

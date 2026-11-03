@@ -1,0 +1,4 @@
+project:
+  render:
+    - "!paper/manuscript.qmd"
+    - analysis/incomplete-path-audit.qmd

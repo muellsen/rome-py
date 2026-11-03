@@ -1,0 +1,38 @@
+---
+title: "Concomitant Huber: primary experiment report"
+date: ""
+---
+
+This report is generated from saved, provenance-checked package experiments.
+The canonical full manuscript is paper/manuscript.qmd. The optional
+unpublished AMP inputs are not required for this report.
+
+# ROME-matched protocol validation
+
+Only the original fixed-scale ROME algorithm and the concomitant extension
+are compared. Four original predictor distributions, Gaussian response noise,
+the original sparse coefficient vector and 100-point penalty paths are used.
+This is a declared validation subset, not the completed 100-replication grid.
+Native ROME stopping and joint KKT tolerances differ; the accompanying counts
+must be checked before interpreting elapsed times. Partial paths are ineligible
+for full-path speed comparisons.
+
+{{< include outputs/rome-paper-validation/results.qmd >}}
+
+![Actual returned coefficient errors, with failed joint returns marked and no imputed tails.](outputs/rome-paper-validation/returned-paths.pdf)
+
+# Unconstrained R4 scaling
+
+The Path-Alg-first study varies sample size at fixed p/n and feature count at
+fixed n. Path0 removes the existing Gram correction to match the objective;
+the stock solver remains an accuracy diagnostic. Every ranked return passes
+a common coefficient/scale stationarity and objective-gap gate. Setup is
+separate from prepared numerical solve time.
+
+{{< include outputs/r4-path-scaling-results.qmd >}}
+
+![Prepared solve and total cost scaling.](outputs/r4-path-scaling.pdf)
+
+# Algorithm
+
+{{< include ../paper/algorithm.qmd >}}

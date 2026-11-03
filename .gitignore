@@ -1,0 +1,50 @@
+__pycache__/
+*.egg-info/
+.venv/
+.quarto/
+_build/
+analysis/outputs/*
+!analysis/outputs/.gitkeep
+sources/private/
+paper/manuscript.html
+paper/manuscript.pdf
+paper/manuscript.tex
+paper/manuscript_files/
+
+/.quarto/
+**/*.quarto_ipynb
+
+# Distribution/build caches
+build/
+dist/
+.pytest_cache/
+*.log
+*.aux
+*.out
+*.toc
+
+# Downloaded reference assets: retrieve using analysis/fetch_sources.py
+sources/*.pdf
+sources/*.zip
+sources/*.tar.gz
+sources/data/*.RData
+sources/data/*.mat
+sources/data/*.tsv
+sources/data/Section4_5.R
+paper/vendor/taylor-francis/
+
+# Private/local provenance and unpublished third-party working material
+sources/local-inputs.json
+sources/amp-aistats2027/
+sources/classo-1.0.11-audit/registry.json
+
+# Standalone report artifacts
+analysis/report.html
+analysis/report_files/
+analysis/scale-path-report.html
+analysis/scale-path-report_files/
+analysis/implementation-audit.html
+analysis/implementation-audit_files/
+
+# Reproducibly downloaded LaTeX algorithm packages
+paper/vendor/algorithm2e/

@@ -1,0 +1,62 @@
+name: Package and primary research workflow
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.12', '3.13']
+    env:
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      MPLCONFIGDIR: /tmp/concomitant-huber-mpl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install --upgrade pip build "setuptools>=77" wheel
+      - run: python -m pip install ".[benchmark,test]"
+      - run: python analysis/fetch_sources.py
+      - run: make check
+      - run: python -m build
+      - run: python analysis/submission_check.py
+      - run: python -m pip install --force-reinstall --no-deps dist/*.whl
+      - run: cd /tmp && python "$GITHUB_WORKSPACE/analysis/installed_smoke.py"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions-${{ matrix.python-version }}
+          path: dist/
+  primary-experiments:
+    runs-on: ubuntu-latest
+    env:
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      MPLCONFIGDIR: /tmp/concomitant-huber-mpl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: r-lib/actions/setup-r@v2
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: '1.9.38'
+      - run: python -m pip install -c analysis/constraints.txt ".[benchmark,test]"
+      - run: Rscript -e 'install.packages(c("Rcpp", "mvtnorm"), repos="https://cloud.r-project.org")'
+      - run: make sources rome-reference rome-validation r4-scaling report
+      - uses: actions/upload-artifact@v4
+        with:
+          name: primary-report-and-provenance
+          path: |
+            _build/analysis/
+            analysis/outputs/rome-paper-validation/
+            analysis/outputs/r4-path-scaling*
+            analysis/outputs/primary-report.provenance.json

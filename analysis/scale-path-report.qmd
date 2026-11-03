@@ -1,0 +1,96 @@
+---
+title: "MM versus direct scale minimization: paired path pilot"
+format:
+  html:
+    embed-resources: true
+---
+
+## Findings
+
+{{< include outputs/scale-path-benchmark/findings.qmd >}}
+
+![Prepared path timing and independent full-path completion. Each timing point is one dataset completed by both methods. The dotted line denotes equal CPU time. Failures are excluded from the timing panel and retained in completion counts.](outputs/scale-path-benchmark/paired-timing.png)
+
+## Design and timing
+
+The original four ROME designs are evaluated at $(n,p)=(100,100)$,
+$(100,500)$ and $(500,500)$, with three independent datasets (seeds 71–73)
+per setting. Each method receives the same 30 absolute penalties, descending
+from $\lambda_{\max}\,0.05^{1/30}$ to $0.05\lambda_{\max}$, where
+$\lambda_{\max}$ is the fixed-scale 1 null-gradient anchor. Both methods
+estimate scale; fixed-scale fitting is used only to define that shared grid.
+
+The perspective objective is
+$$
+\frac1n\sum_{i=1}^n\sigma h_{0.5}\!\left(
+\frac{y_i-x_i^\top\beta}{\sigma}\right)
++a\sigma+\lambda_0\|\beta\|_1,
+\qquad a=\tfrac12\mathbb E\min(Z^2,0.5^2),\quad Z\sim N(0,1).
+$$
+There is no intercept or standardization. The coefficient loop, working sets,
+initial scale 1, zero initial coefficients, optional joint Newton polishing
+every 5 sweeps, boundary LP fallback, and joint tolerance $10^{-6}$ are identical.
+MM uses at most 8 inner steps per sweep; the scalar root uses tolerance
+$5\times10^{-7}$ and at most 2000 iterations. The per-penalty sweep limit is 4000.
+Compilation and LP backend initialization precede timing. Paths run serially,
+with alternating method order across consecutive cases. This order is balanced
+overall, but is not independently randomized within each design/size setting.
+
+CPU and wall times cover the prepared path, including internal convergence
+checks and boundary LPs. They exclude input generation, serialization and
+independent post-fit validation. A 120-second soft safeguard is checked between
+penalties. No path hit that safeguard. A failed point stops its path and leaves
+the remaining tail explicitly unattempted.
+
+## Results by design and size
+
+{{< include outputs/scale-path-benchmark/results.qmd >}}
+
+The two CPU columns summarize the **same complete paired subset** in each row.
+Root/MM is the median of within-dataset ratios, which can differ from the ratio
+of the two displayed medians. There are only three datasets per setting and
+one primary timing per method/dataset; these results do not establish small
+runtime differences with statistical precision.
+
+## Convergence and isolated scale work
+
+Four declared examples use $n=p=100$, seed 71, and the eleventh grid penalty.
+Both methods start cold. Each plotted point reruns the production solver with
+a specified sweep cap, from the same initial state. Its horizontal coordinate
+is the median standalone prefix CPU time over three repetitions; it is **not**
+the sum of preceding prefix times or a continuously instrumented run.
+The last-sweep certificate at a truncated prefix can change when full
+optimality is first detected, so prefix endpoints are diagnostics rather than
+an exact recorded sequence of termination decisions in an unrestricted run.
+
+![Joint optimality residual, scale and coefficient convergence for four selected instances. The coefficient reference is the final certified MM prefix; distance is divided by the larger of one and its coefficient norm. Coefficient distances below $10^{-10}$ are drawn at $10^{-10}$; this display floor is not an accuracy guarantee.](outputs/scale-path-benchmark/prefix-convergence.png)
+
+An analysis-only recording clone reproduces the production coefficients,
+scale and sweep count exactly for each example. The actual residual/scale
+inputs recorded before each scale block are then replayed through the package
+scale routine, in batches, with three timing repetitions. The following sums
+are isolated block-work measurements along the respective trajectories.
+They exclude coefficient updates and are **not** additive estimates of the
+primary path times. They also use each method's own visited scale inputs.
+
+{{< include outputs/scale-path-benchmark/scale-replay.qmd >}}
+
+## Incomplete paths
+
+{{< include outputs/scale-path-benchmark/failures.qmd >}}
+
+Three failed returns reach the existing tiny-scale handoff criterion; their
+boundary LP fallback does not produce a sufficiently tight feasible-dual
+certificate. One scalar-root return exhausts 4000 sweeps at positive scale.
+A failed boundary certificate does not prove that the true optimum has
+positive scale: an LP dual choice may fail to certify the perspective problem.
+These paths are not evidence of different target objectives or of a faulty
+scalar root identity. They identify convergence and certification limitations
+of the current joint implementation.
+
+## Reproduction and provenance
+
+Run `make scale-path-benchmark`. Raw inputs, solutions, independent checks,
+stopping status, prefix diagnostics, source hashes and environment records
+are retained under `analysis/outputs/scale-path-benchmark/`. The original
+360-path historical study and all previous manuscript results are preserved.

@@ -1,0 +1,19 @@
+{
+  "retrieved_utc": "2026-10-20T11:23:59.347291+00:00",
+  "sources": {
+    "glass": "sources/rome-99d6f07.tar.gz: code_paper/glass.RData and Section4_5.R",
+    "riboflavin": "https://raw.githubusercontent.com/muellsen/TREX/master/examples/Riboflavin/riboflavinData.mat",
+    "amp": "local perspective-amp working snapshot, HEAD 38be174660741ac3bd1364d968c5d8c731276f5c"
+  },
+  "sha256": {
+    "sources/amp-aistats2027/README.md": "b20f413f507c770df8dbe87df77025579e16f5675d4536b1de8080ec16a3515e",
+    "sources/amp-aistats2027/draft.tex": "968f13a5cdc4738a03deb1e9c5b7132d1079cae41f06b0f6400cb0b4524e8fb2",
+    "sources/amp-aistats2027/sparse_ramp_derivation.md": "fcf04f4af930468059aec5bd0e63b2cf7a6e7836cb11f287d5f65e51ec683c7c",
+    "sources/amp-aistats2027/perspective_huber_ramp_solver.py": "86a692251fafbcc850b6fcdc5596e214d16630ce02fc24b56c54b8107546746f",
+    "sources/data/glass-X.tsv": "9e7f93280a00dac3610f9ecd0c8a6592d20c0fbe4adabd28ed2ad68b8f04e71a",
+    "sources/data/glass-y.tsv": "32187966babda3971551977cae1cdb6e9fff9b6853eb92c27f78b3b6c3bedd85",
+    "sources/data/Section4_5.R": "beb500aa803ad13eef4ce53d27a1cbfbeb264618a8293001ad90c6eafbff0f02",
+    "sources/data/riboflavinData.mat": "df2d3ac1c7a2fb7772d67b46a269d4daebdd6193f5d9c17d6ec7aeec5486c643",
+    "sources/data/glass.RData": "8817dbb7840199d617bec0bab3e214b11011be0e82c7aeab867fceee0440ac94"
+  }
+}

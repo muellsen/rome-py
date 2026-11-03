@@ -1,0 +1,44 @@
+[
+  {
+    "path": "sources/InteractCADLaTeX.zip",
+    "url": "https://files.taylorandfrancis.com/InteractCADLaTeX.zip",
+    "retrieved_utc": "2026-10-19T12:10:08.252330+00:00",
+    "sha256": "5aeb0952b0021ad98653fe8ca6a1ea8edf35fbd639af5ee5443e6662dff90e25",
+    "bytes": 430282
+  },
+  {
+    "path": "sources/rome-paper.pdf",
+    "url": "https://arxiv.org/pdf/2510.13715",
+    "retrieved_utc": "2026-10-19T12:10:08.254511+00:00",
+    "sha256": "3d453d546be7aff27e1ac68e8f8af845fd67a89912a51cb9c63a87d02b4a09ad",
+    "bytes": 2188538
+  },
+  {
+    "path": "sources/rome-99d6f07.tar.gz",
+    "url": "https://api.github.com/repos/yk748/rome/tarball/99d6f07e2f5daa262768387701af7769dfbc2212",
+    "retrieved_utc": "2026-10-19T12:10:08.261504+00:00",
+    "sha256": "eccbefa4b44b96ae3297803ab2d72306d489f6206a78c97b99d23d2ec0498dfa",
+    "bytes": 644194
+  },
+  {
+    "path": "sources/trex.pdf",
+    "url": "https://arxiv.org/pdf/1604.06815",
+    "retrieved_utc": "2026-10-19T12:10:08.263417+00:00",
+    "sha256": "3d888a5bfe7d73b835a79f0c849fd224b2b2383bf53aa23003aec4dec045a90c",
+    "bytes": 6018207
+  },
+  {
+    "path": "sources/latent-correlations.pdf",
+    "url": "https://arxiv.org/pdf/2006.13875",
+    "retrieved_utc": "2026-10-19T12:10:08.285269+00:00",
+    "sha256": "6d366a89e312622b9566eea15866c0b5fe5c8150da916705cdbfa8a54bc18788",
+    "bytes": 1418911
+  },
+  {
+    "path": "sources/combettes-mueller-2020.pdf",
+    "url": "https://pcombet.math.ncsu.edu/ejs1.pdf",
+    "retrieved_utc": "2026-10-20T10:43:18.001890+00:00",
+    "sha256": "2528b8d9eeeb32b43f3958efd15a48cc6cc3ad20c26831abca5e937649569d02",
+    "bytes": 3550887
+  }
+]
