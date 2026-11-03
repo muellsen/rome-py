@@ -43,7 +43,7 @@ h_\rho(u)=
 \rho|u|-\tfrac12\rho^2, & |u|>\rho,
 \end{cases}
 \qquad
-\psi_\rho(u)=\operatorname{sign}(u)\min\{|u|,\rho\}.
+\psi_\rho(u)=\mathrm{sign}(u)\min\{|u|,\rho\}.
 $$
 
 ### Fixed-scale sparse Huber regression
@@ -51,7 +51,7 @@ $$
 For a specified scale $s_0>0$, the package solves
 
 $$
-\underset{b,\beta}{\operatorname{minimize}}\quad
+\underset{b,\beta}{\min}\quad
 \frac{s_0}{n}\sum_{i=1}^{n}
 h_\rho\!\left(\frac{r_i(b,\beta)}{s_0}\right)
 +\lambda_0\|\beta\|_1.
@@ -60,7 +60,7 @@ $$
 Multiplying by $s_0$ gives the equivalent ROME lasso objective
 
 $$
-\underset{b,\beta}{\operatorname{minimize}}\quad
+\underset{b,\beta}{\min}\quad
 \frac1n\sum_{i=1}^{n}h_\delta\!\left(r_i(b,\beta)\right)
 +\eta\|\beta\|_1,
 \qquad \delta=\rho s_0,\quad \eta=s_0\lambda_0.
@@ -76,7 +76,7 @@ supports the lasso penalty.
 For $a>0$, the scale is estimated jointly with the coefficients:
 
 $$
-\underset{b,\beta,\,\sigma\geq0}{\operatorname{minimize}}\quad
+\underset{b,\beta,\,\sigma\geq0}{\min}\quad
 \frac1n\sum_{i=1}^{n}\widetilde h_\rho
 \!\left(\sigma,r_i(b,\beta)\right)
 +a\sigma+\lambda_0\|\beta\|_1,
