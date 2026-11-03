@@ -53,7 +53,7 @@ For a specified scale $s_0>0$, the package solves
 $$
 \underset{b,\beta}{\min}\quad
 \frac{s_0}{n}\sum_{i=1}^{n}
-h_\rho\!\left(\frac{r_i(b,\beta)}{s_0}\right)
+h_\rho\left(\frac{r_i(b,\beta)}{s_0}\right)
 +\lambda_0\|\beta\|_1.
 $$
 
@@ -61,7 +61,7 @@ Multiplying by $s_0$ gives the equivalent ROME lasso objective
 
 $$
 \underset{b,\beta}{\min}\quad
-\frac1n\sum_{i=1}^{n}h_\delta\!\left(r_i(b,\beta)\right)
+\frac1n\sum_{i=1}^{n}h_\delta\left(r_i(b,\beta)\right)
 +\eta\|\beta\|_1,
 \qquad \delta=\rho s_0,\quad \eta=s_0\lambda_0.
 $$
@@ -78,7 +78,7 @@ For $a>0$, the scale is estimated jointly with the coefficients:
 $$
 \underset{b,\beta,\,\sigma\geq0}{\min}\quad
 \frac1n\sum_{i=1}^{n}\widetilde h_\rho
-\!\left(\sigma,r_i(b,\beta)\right)
+\left(\sigma,r_i(b,\beta)\right)
 +a\sigma+\lambda_0\|\beta\|_1,
 $$
 
@@ -119,7 +119,7 @@ The default $a=0.5$ specifies a scale convention. For Gaussian scale calibration
 choose
 
 $$
-a_{\mathrm G}(\rho)=\tfrac12\mathbb E\!\left[\min\{Z^2,\rho^2\}\right],
+a_{\mathrm G}(\rho)=\tfrac12\mathbb E\left[\min\{Z^2,\rho^2\}\right],
 \qquad Z\sim\mathcal N(0,1).
 $$
 
